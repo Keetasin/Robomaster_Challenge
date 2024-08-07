@@ -1,9 +1,3 @@
-# หมุน180
-# gimbal หน้าตลอด
-# เเปลงsharp
-# เอาsensor กับ  moveมาาทำงานร่วมกัน
-# digital filter
-
 import time
 import csv
 import matplotlib.pyplot as plt
@@ -51,17 +45,22 @@ def move_distance(ep_chassis, target_distance, kp, ki, kd, tolerance, max_time, 
 
     while abs(target_distance - current_x) > tolerance and (time.time() - start_time) < max_time:
         current_time = time.time()
-        error = target_distance - current_x
+        error = abs(target_distance - current_x)
         time_diff = current_time - prev_time
         integral += error * time_diff
         derivative = (error - prev_error) / time_diff if time_diff > 0 else 0.0
         speed = kp * error + kd * derivative + ki * integral
-        speed = max(min(speed, 150), -150)
-
+        
+        # Ensure speed is not negative
+        speed = max(speed, 0)
+        
+        # Limit the speed within a safe range
+        speed = max(min(speed, 150), 0)
+        
         ep_chassis.drive_wheels(w1=speed, w2=speed, w3=speed, w4=speed)
         list_current_x.append(current_x)
         target.append(target_distance)
-        time_data.append(current_time - overall_start_time)
+        time_data.append(time.time() - overall_start_time)
 
         prev_error = error
         prev_time = current_time
@@ -79,6 +78,10 @@ def stop_and_record(ep_chassis, target_distance, overall_start_time, time_data, 
         time_data.append(time.time() - overall_start_time)
         time.sleep(0.1)
 
+def rotate_180_degrees(ep_chassis):
+    ep_chassis.move(x=0, y=0, z=180, xy_speed=20).wait_for_completed()
+    time.sleep(0.5)
+
 if __name__ == '__main__':
     ep_robot = robot.Robot()
     ep_robot.initialize(conn_type="ap")
@@ -89,7 +92,6 @@ if __name__ == '__main__':
     kp, ki, kd = 120, 5, 30
     tolerance = 0.01
     max_time = 7
-    rounds = 2
 
     ep_chassis.sub_position(freq=10, callback=sub_position_handler)
     ep_sensor.sub_distance(freq=10, callback=sub_tof_handler)
@@ -99,12 +101,18 @@ if __name__ == '__main__':
     time_data, list_current_x, target = [], [], []
     overall_start_time = time.time()
 
-    for _ in range(rounds):
-        move_distance(ep_chassis, 1.5, kp, ki, kd, tolerance, max_time, overall_start_time, time_data, list_current_x, target)
-        stop_and_record(ep_chassis, 1.5, overall_start_time, time_data, list_current_x, target)
+    for _ in range(2):
+        move_distance(ep_chassis, 0.6, kp, ki, kd, tolerance, max_time, overall_start_time, time_data, list_current_x, target)
+        stop_and_record(ep_chassis, 0.6, overall_start_time, time_data, list_current_x, target)
+        
+        rotate_180_degrees(ep_chassis)
 
         move_distance(ep_chassis, 0.0, kp, ki, kd, tolerance, max_time, overall_start_time, time_data, list_current_x, target)
         stop_and_record(ep_chassis, 0.0, overall_start_time, time_data, list_current_x, target)
+
+        rotate_180_degrees(ep_chassis)
+
+
 
     ep_chassis.unsub_position()
     ep_sensor.unsub_distance()
