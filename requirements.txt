@@ -11,7 +11,6 @@ opencv-python >= 4.2
 netaddr >= 0.8
 netifaces >= 0.10
 matplotlib
-
 #
 ###### Refer to other requirements files ######
 #-r other-requirements.txt
