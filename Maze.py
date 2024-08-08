@@ -76,8 +76,8 @@ if __name__ == '__main__':
     ep_gimbal.recenter().wait_for_completed()
     time.sleep(0.5)
     
-    for _ in range(2):
-        move_until_tof_less_than(ep_chassis, 200, 10, overall_start_time, time_data, list_current_x)  # Adjust max_time as needed
+    for _ in range(4):
+        move_until_tof_less_than(ep_chassis, 500, 10, overall_start_time, time_data, list_current_x)  # Adjust max_time as needed
         rotate_180_degrees(ep_chassis)
         ep_gimbal.recenter().wait_for_completed()
         time.sleep(0.5)
