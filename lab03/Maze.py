@@ -27,15 +27,41 @@ def sub_tof_handler(tof_info):
     tof_time_data.append(time.time())
     print(f"TOF: distance={tof_info[0]}")
 
-def sub_data_handler_left_right(sub_info):
+def sub_data_handler(sub_info):
     io_data, ad_data = sub_info
-    left = sum(ad_data[0:2])/2
-    right = sum(ad_data[2:4])/2
+    
+    # Convert each ADC value to voltage and calculate distance
+    distances = []
+    for adc_value in ad_data:
+        voltage = adc_value * 3.3 / 1023
+
+        # Define the piecewise linear approximation ranges and coefficients
+        ranges = [
+            {'m': -0.3846, 'c': 4.30764, 'min': 2.2, 'max': 3.2},
+            {'m': -0.2, 'c': 3.2, 'min': 1.4, 'max': 2.2},
+            {'m': -0.067, 'c': 1.87, 'min': 0.8, 'max': 1.4},
+            {'m': -0.034, 'c': 1.344, 'min': 0.4, 'max': 0.8}
+        ]
+
+        distance = None
+        for range_ in ranges:
+            if range_['min'] <= voltage < range_['max']:
+                distance = (voltage - range_['c']) / range_['m']
+                distances.append(distance)
+                break
+    
+    # Calculate avg for left and right sensor
+    left = sum(distances[0:2]) / 2
+    right = sum(distances[2:4]) / 2
     left_data.append(left)
     right_data.append(right)
     left_time_data.append(time.time())
     right_time_data.append(time.time())
+
+    # print(f"io value: {io_data}, ad values: {ad_data}")
+    # print(f"Distance to the foam wall: {distances} cm")
     print(f"port1 left: {left}, port2 right: {right}")
+    return distances
 
 def move_until_tof_less_than(ep_chassis, threshold_distance, max_time, overall_start_time, time_data, list_current_x):
     start_time = time.time()
