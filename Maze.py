@@ -13,6 +13,8 @@ left_data = []
 right_data = []
 left_time_data = []
 right_time_data = []
+left = 0.0
+right = 0.0
 
 def sub_position_handler(position_info):
     global current_x
@@ -20,31 +22,66 @@ def sub_position_handler(position_info):
     current_x = x
     position_data.append(position_info)
     position_time_data.append(time.time())
-    print(f"Position: x={x}, y={y}, z={z}")
+    # print(f"Position: x={x}, y={y}, z={z}")
 
 def sub_tof_handler(tof_info):
     tof_data.append(tof_info[0])
     tof_time_data.append(time.time())
-    print(f"TOF: distance={tof_info[0]}")
+    # print(f"TOF: distance={tof_info[0]}")
 
-def sub_data_handler_left_right(sub_info):
+def sub_data_handler(sub_info):
+    global left, right
     io_data, ad_data = sub_info
-    left = sum(ad_data[0:2])/2
-    right = sum(ad_data[2:4])/2
+    
+    # Convert each ADC value to voltage and calculate distance
+    distances = []
+    for adc_value in ad_data:
+        voltage = adc_value * 3.3 / 1023
+
+        # Define the piecewise linear approximation ranges and coefficients
+        ranges = [
+            {'m': -0.3846, 'c': 4.30764, 'min': 2.2, 'max': 3.2},
+            {'m': -0.2, 'c': 3.2, 'min': 1.4, 'max': 2.2},
+            {'m': -0.067, 'c': 1.87, 'min': 0.8, 'max': 1.4},
+            {'m': -0.034, 'c': 1.344, 'min': 0.4, 'max': 0.8}
+        ]
+
+        distance = None
+        for range_ in ranges:
+            if range_['min'] <= voltage < range_['max']:
+                distance = (voltage - range_['c']) / range_['m']
+                distances.append(distance)
+                break
+    
+    # Calculate avg for left and right sensor
+    left = sum(distances[0:2]) / 2
+    right = sum(distances[2:4]) / 2
     left_data.append(left)
     right_data.append(right)
     left_time_data.append(time.time())
     right_time_data.append(time.time())
-    print(f"port1 left: {left}, port2 right: {right}")
 
-def move_until_tof_less_than(ep_chassis, threshold_distance, max_time, overall_start_time, time_data, list_current_x):
-    start_time = time.time()
+    # print(f"port1 left: {left}, port2 right: {right}")
+    return distances
 
-    while (time.time() - start_time) < max_time:
+def move_until_tof_less_than(ep_chassis, threshold_distance, overall_start_time, time_data, list_current_x):
+    global left, right
+
+    while True:
         if tof_data and tof_data[-1] < threshold_distance:
             break
         
-        ep_chassis.drive_wheels(w1=100, w2=100, w3=100, w4=100)  # Adjust speed as needed
+        if right <= 13:
+            ep_chassis.drive_wheels(w1=0, w2=0, w3=0, w4=0)  
+            ep_chassis.drive_wheels(w1=15, w2=-15, w3=15, w4=-15)  
+            print('<')
+        elif left <= 13:
+            ep_chassis.drive_wheels(w1=0, w2=0, w3=0, w4=0)  
+            ep_chassis.drive_wheels(w1=-15, w2=15, w3=-15, w4=15)  
+            print('>')
+        else:
+            ep_chassis.drive_wheels(w1=90, w2=90, w3=90, w4=90)  
+
         list_current_x.append(current_x)
         time_data.append(time.time() - overall_start_time)
         
@@ -53,8 +90,8 @@ def move_until_tof_less_than(ep_chassis, threshold_distance, max_time, overall_s
     ep_chassis.drive_wheels(w1=0, w2=0, w3=0, w4=0)
     time.sleep(0.5)
 
-def rotate_180_degrees(ep_chassis):
-    ep_chassis.move(x=0, y=0, z=180, xy_speed=20).wait_for_completed()
+def rotate_180_degrees(ep_chassis):  
+    ep_chassis.move(x=0, y=0, z=180, xy_speed=15).wait_for_completed()
     time.sleep(0.5)
 
 if __name__ == '__main__':
@@ -67,7 +104,7 @@ if __name__ == '__main__':
 
     ep_chassis.sub_position(freq=10, callback=sub_position_handler)
     ep_sensor.sub_distance(freq=10, callback=sub_tof_handler)
-    ep_sensor_adaptor.sub_adapter(freq=10, callback=sub_data_handler_left_right)  # Subscribe to analog data
+    ep_sensor_adaptor.sub_adapter(freq=10, callback=sub_data_handler)  # Subscribe to analog data
     time.sleep(1)
 
     time_data, list_current_x = [], []
@@ -76,8 +113,27 @@ if __name__ == '__main__':
     ep_gimbal.recenter().wait_for_completed()
     time.sleep(0.5)
     
-    for _ in range(4):
-        move_until_tof_less_than(ep_chassis, 500, 10, overall_start_time, time_data, list_current_x)  # Adjust max_time as needed
+    for _ in range(6):
+        move_until_tof_less_than(ep_chassis, 500, overall_start_time, time_data, list_current_x)  
+        ep_chassis.drive_wheels(w1=0, w2=0, w3=0, w4=0)  
+        time.sleep(0.5)
+
+        while True:
+            if right <= 13:
+                ep_chassis.drive_wheels(w1=0, w2=0, w3=0, w4=0)  
+                ep_chassis.drive_wheels(w1=15, w2=-15, w3=15, w4=-15) 
+                print('<-') 
+            elif left <= 13:
+                ep_chassis.drive_wheels(w1=0, w2=0, w3=0, w4=0)  
+                ep_chassis.drive_wheels(w1=-15, w2=15, w3=-15, w4=15)  
+                print('->') 
+            else:
+                print(right,left)
+                print('ok')
+                print('-'*10)
+                break  
+        time.sleep(0.5)
+        
         rotate_180_degrees(ep_chassis)
         ep_gimbal.recenter().wait_for_completed()
         time.sleep(0.5)
@@ -130,9 +186,3 @@ if __name__ == '__main__':
 
     plt.tight_layout()
     plt.show()
-
-
-
-
-
-
