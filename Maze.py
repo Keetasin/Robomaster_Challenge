@@ -82,12 +82,14 @@ def rotate_180_degrees(ep_chassis):
     ep_chassis.move(x=0, y=0, z=180, xy_speed=20).wait_for_completed()
     time.sleep(0.5)
 
+
 if __name__ == '__main__':
     ep_robot = robot.Robot()
     ep_robot.initialize(conn_type="ap")
     ep_chassis = ep_robot.chassis
     ep_sensor = ep_robot.sensor
     ep_sensor_adaptor = ep_robot.sensor_adaptor
+    ep_gimbal = ep_robot.gimbal
 
     kp, ki, kd = 120, 5, 30
     tolerance = 0.01
@@ -101,16 +103,24 @@ if __name__ == '__main__':
     time_data, list_current_x, target = [], [], []
     overall_start_time = time.time()
 
+    ep_gimbal.recenter().wait_for_completed()
+    time.sleep(0.5)
+    
     for _ in range(2):
         move_distance(ep_chassis, 0.6, kp, ki, kd, tolerance, max_time, overall_start_time, time_data, list_current_x, target)
         stop_and_record(ep_chassis, 0.6, overall_start_time, time_data, list_current_x, target)
         
         rotate_180_degrees(ep_chassis)
+        ep_gimbal.recenter().wait_for_completed()
+        time.sleep(0.5)
+
 
         move_distance(ep_chassis, 0.0, kp, ki, kd, tolerance, max_time, overall_start_time, time_data, list_current_x, target)
         stop_and_record(ep_chassis, 0.0, overall_start_time, time_data, list_current_x, target)
 
         rotate_180_degrees(ep_chassis)
+        ep_gimbal.recenter().wait_for_completed()
+        time.sleep(0.5)
 
 
 
