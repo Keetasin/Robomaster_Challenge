@@ -1,6 +1,7 @@
 import time
 import csv
 import matplotlib.pyplot as plt
+import numpy as np
 from robomaster import robot
 
 # Global variables
@@ -16,6 +17,7 @@ right_time_data = []
 left = 0.0
 right = 0.0
 
+
 def sub_position_handler(position_info):
     global current_x
     x, y, z = position_info
@@ -24,10 +26,12 @@ def sub_position_handler(position_info):
     position_time_data.append(time.time())
     # print(f"Position: x={x}, y={y}, z={z}")
 
+
 def sub_tof_handler(tof_info):
     tof_data.append(tof_info[0])
     tof_time_data.append(time.time())
     # print(f"TOF: distance={tof_info[0]}")
+
 
 def sub_data_handler(sub_info):
     global left, right
@@ -52,7 +56,7 @@ def sub_data_handler(sub_info):
                 distance = (voltage - range_['c']) / range_['m']
                 distances.append(distance)
                 break
-    
+
     # Calculate avg for left and right sensor
     left = sum(distances[0:2]) / 2
     right = sum(distances[2:4]) / 2
@@ -60,9 +64,10 @@ def sub_data_handler(sub_info):
     right_data.append(right)
     left_time_data.append(time.time())
     right_time_data.append(time.time())
-
+    
     # print(f"port1 left: {left}, port2 right: {right}")
     return distances
+
 
 def move_until_tof_less_than(ep_chassis, threshold_distance, overall_start_time, time_data, list_current_x):
     global left, right
@@ -71,11 +76,11 @@ def move_until_tof_less_than(ep_chassis, threshold_distance, overall_start_time,
         if tof_data and tof_data[-1] < threshold_distance:
             break
         
-        if right <= 13:
+        if right <= 10 :
             ep_chassis.drive_wheels(w1=0, w2=0, w3=0, w4=0)  
             ep_chassis.drive_wheels(w1=15, w2=-15, w3=15, w4=-15)  
             print('<')
-        elif left <= 13:
+        elif left <= 10:
             ep_chassis.drive_wheels(w1=0, w2=0, w3=0, w4=0)  
             ep_chassis.drive_wheels(w1=-15, w2=15, w3=-15, w4=15)  
             print('>')
@@ -90,9 +95,21 @@ def move_until_tof_less_than(ep_chassis, threshold_distance, overall_start_time,
     ep_chassis.drive_wheels(w1=0, w2=0, w3=0, w4=0)
     time.sleep(0.5)
 
+
 def rotate_180_degrees(ep_chassis):  
     ep_chassis.move(x=0, y=0, z=180, xy_speed=15).wait_for_completed()
     time.sleep(0.5)
+
+
+def rotate_left(ep_chassis):  
+    ep_chassis.move(x=0, y=0, z=90, xy_speed=15).wait_for_completed()
+    time.sleep(0.5)
+
+
+def rotate_right(ep_chassis):  
+    ep_chassis.move(x=0, y=0, z=-90, xy_speed=15).wait_for_completed()
+    time.sleep(0.5)
+
 
 if __name__ == '__main__':
     ep_robot = robot.Robot()
@@ -112,36 +129,56 @@ if __name__ == '__main__':
 
     ep_gimbal.recenter().wait_for_completed()
     time.sleep(0.5)
-    
-    for _ in range(6):
-        move_until_tof_less_than(ep_chassis, 500, overall_start_time, time_data, list_current_x)  
+
+
+    while True:
+        move_until_tof_less_than(ep_chassis, 400, overall_start_time, time_data, list_current_x)  
         ep_chassis.drive_wheels(w1=0, w2=0, w3=0, w4=0)  
         time.sleep(0.5)
 
         while True:
-            if right <= 13:
+            if right <= 10 and right != 0:
                 ep_chassis.drive_wheels(w1=0, w2=0, w3=0, w4=0)  
                 ep_chassis.drive_wheels(w1=15, w2=-15, w3=15, w4=-15) 
                 print('<-') 
-            elif left <= 13:
+            elif left <= 10:
                 ep_chassis.drive_wheels(w1=0, w2=0, w3=0, w4=0)  
                 ep_chassis.drive_wheels(w1=-15, w2=15, w3=-15, w4=15)  
                 print('->') 
             else:
-                print(right,left)
+                print(right, left)
                 print('ok')
                 print('-'*10)
                 break  
         time.sleep(0.5)
-        
-        rotate_180_degrees(ep_chassis)
+
+        ep_gimbal.moveto(pitch=0, yaw=90, pitch_speed=0, yaw_speed=30).wait_for_completed()
+        time.sleep(0.2)
+
+        if tof_data and tof_data[-1] >= 700:
+            rotate_right(ep_chassis)
+        else:
+            ep_gimbal.recenter().wait_for_completed()
+            time.sleep(0.2)
+            ep_gimbal.moveto(pitch=0, yaw=-90, pitch_speed=0, yaw_speed=30).wait_for_completed()
+            time.sleep(0.2)
+            if tof_data and tof_data[-1] >= 700:
+                rotate_left(ep_chassis)
+            else:
+                ep_gimbal.recenter().wait_for_completed()
+                time.sleep(0.2)
+                rotate_180_degrees(ep_chassis)
+
         ep_gimbal.recenter().wait_for_completed()
-        time.sleep(0.5)
+        time.sleep(0.2)
+
+        if tof_data and tof_data[-1] >= 1000 and right >= 18 and left >= 18: break
 
     ep_chassis.unsub_position()
     ep_sensor.unsub_distance()
     ep_sensor_adaptor.unsub_adapter()
     ep_robot.close()
+
 
     # Save data to CSV
     with open('chassis_data.csv', 'w', newline='') as csvfile:
@@ -186,3 +223,5 @@ if __name__ == '__main__':
 
     plt.tight_layout()
     plt.show()
+
+
