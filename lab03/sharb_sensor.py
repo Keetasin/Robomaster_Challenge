@@ -13,7 +13,7 @@ def sub_data_handler(sub_info):
     distances = []
     for adc_value in ad_data:
         voltage = adc_value * 3.3 / 1023
-
+        print(voltage)
         # Adjusted piecewise linear approximation
         if 2.2 <= voltage < 3.2:
             distance = (voltage - 4.30764) / -0.3846
@@ -38,7 +38,10 @@ def sub_data_handler(sub_info):
     left_time_data.append(time.time())
     right_time_data.append(time.time())
     
-    
+    if left >= 22:
+        left = 50
+    if right >= 22:
+        right = 50
     if distance == 0:
         print("!" * 15)
         
