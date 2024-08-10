@@ -41,10 +41,10 @@ if __name__ == '__main__':
     ep_chassis.sub_attitude(freq=10, callback=sub_attitude_info_handler)
     time.sleep(1)
     # for i in range(10):
-    if yaw > 10:
+    if 0 <= yaw > 10:
         turn_back = yaw
         print(f"turn left: {turn_back} from {yaw}")
-    elif yaw < -10:
+    elif -10 <= yaw < 0:
         turn_back = yaw 
         print(f"turn right: {turn_back} from {yaw}")
         # print(i)
