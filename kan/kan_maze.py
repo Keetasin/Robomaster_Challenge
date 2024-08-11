@@ -48,8 +48,24 @@ def update_sensor_data(sub_info):
         distances.append(distance)
 
     # คำนวณระยะทางเฉลี่ยของเซ็นเซอร์ซ้ายและขวา
-    current_left = sum(distances[0:2]) / 2
-    current_right = sum(distances[2:4]) / 2
+    left = sum(distances[0:2]) / 2
+    right = sum(distances[2:4]) / 2
+
+    current_left = left
+    current_right = right
+
+    if 9 <= left <= 13:
+        left += 1
+    elif 14 <= left <= 16:  
+        left += 3
+
+    if left >= 12.9:
+        left = 50
+    if right >= 25:
+        right = 50
+
+    print("ad_data", ad_data)
+    print(f"port1 left: {left}, port2 right: {right}")
 
 def move_until_threshold(ep_chassis, threshold_distance):
     global has_large_gap, gap_count
@@ -63,15 +79,15 @@ def move_until_threshold(ep_chassis, threshold_distance):
         # หมุนหุ่นยนต์หากเซ็นเซอร์ด้านขวาต่ำกว่าค่าที่กำหนด
         if current_right <= 10:
             turn_right(ep_chassis)
-            print(f"turn_right {ep_chassis}")
+            print(f"turn_right")
         # หมุนหุ่นยนต์หากเซ็นเซอร์ด้านซ้ายต่ำกว่าค่าที่กำหนด
         elif current_left <= 10:
             turn_left(ep_chassis)
-            print(f"turn_left {ep_chassis}")
+            print(f"turn_left")
         # หยุดหากพบช่องว่างขนาดใหญ่และเซ็นเซอร์ด้านขวาเกินค่าที่กำหนด
         elif has_large_gap and current_right >= 49:
             stop_robot(ep_chassis)
-            print(f"has_large_gap and current_right >= 49")
+            print(f"stop_robot")
             break
         else:
             move_forward(ep_chassis)

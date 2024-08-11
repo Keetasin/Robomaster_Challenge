@@ -1,20 +1,31 @@
-import robomaster
 from robomaster import robot
 import time
 
-left_data = []
-right_data = []
-left_time_data = []
-right_time_data = []
+sharp_left_data = []
+sharp_right_data = []
 
+def filter_adc_value(ad_data):
+    y_filtered = []
+    alpha = 0.8  # ตั้งค่า alpha ตามความต้องการ
+    y_prev = 0  # ค่าเริ่มต้นของ y[n-1]
+
+    for adc_value in ad_data: # 153, 153, 203, 203
+        y_current = alpha * y_prev + (1 - alpha) * adc_value
+        y_filtered.append(y_current)
+        y_prev = y_current
+
+    return y_filtered # 150, 150, 200, 200
 
 def sub_data_handler(sub_info):
     io_data, ad_data = sub_info
     
+    # กรองค่า ADC
+    y_filtered = filter_adc_value(ad_data)
+
     distances = []
-    for adc_value in ad_data:
-        voltage = adc_value * 3.3 / 1023
-        # print(voltage)
+    for adc_filtered in  y_filtered:
+        voltage = adc_filtered * 3.3 / 1023
+
         # Adjusted piecewise linear approximation
         if 2.2 <= voltage < 3.2:
             distance = (voltage - 4.30764) / -0.3846
@@ -28,37 +39,22 @@ def sub_data_handler(sub_info):
             if voltage >= 3.2:
                 distance = (voltage - 4.30764) / -0.3846
             elif voltage < 0.4:
-                distance = 50.0
+                distance = (voltage - 1.344) / -0.034
 
         distances.append(distance)
-
-    left = sum(distances[0:2]) / 2
-    right = sum(distances[2:4]) / 2
-    left_data.append(left)
-    right_data.append(right)
-    left_time_data.append(time.time())
-    right_time_data.append(time.time())
     
-    if 9 <= left <= 13:
-        left += 1
-    elif 14 <= left <= 16:  
-        left += 3
+    sharp_left = sum(distances[0:2]) / 2
+    sharp_right = sum(distances[2:4]) / 2
+    sharp_left_data.append(sharp_left)
+    sharp_right_data.append(sharp_right)
 
-    if left >= 25:
-        left = 50
-    if right >= 25:
-        right = 50
-    if distance == 0:
-        print("!" * 15)
-        
-    # print("--> ad_data", ad_data[0:4])
-    print(f"port1 left: {left}, port2 right: {right}")
-
+    print(f"PORT1 left: {sharp_left}, PORT2 right: {sharp_right}")
+    
     return distances
 
 def sub_tof_handler(sub_info):
     distance = sub_info
-    print("tof1:{0}".format(distance[0]))
+    # print("tof1:{0}".format(distance[0]))
 
 
 if __name__ == '__main__':
@@ -72,9 +68,14 @@ if __name__ == '__main__':
     ep_sensor_adaptor = ep_robot.sensor_adaptor
 
     ep_sensor.sub_distance(freq=5, callback=sub_tof_handler)
-    ep_sensor_adaptor.sub_adapter(freq=5, callback=sub_data_handler)
+    ep_sensor.sub_adapter(freq=5, callback=sub_data_handler)
+
     time.sleep(20)
-    ep_sensor.unsub_adapter()
+
     ep_sensor.unsub_distance()
+    ep_sensor_adaptor.unsub_adapter()
 
     ep_robot.close()
+
+
+
