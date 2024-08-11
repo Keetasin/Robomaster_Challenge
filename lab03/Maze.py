@@ -93,7 +93,7 @@ if __name__ == '__main__':
 
     ep_chassis.sub_position(freq=10, callback=sub_position_handler)
     ep_sensor.sub_distance(freq=10, callback=sub_tof_handler)
-    ep_sensor_adaptor.sub_adapter(freq=10, callback=sub_data_handler_left_right)  # Subscribe to analog data
+    ep_sensor_adaptor.sub_adapter(freq=10, callback=sub_data_handler)  # Subscribe to analog data
     time.sleep(1)
 
     time_data, list_current_x = [], []

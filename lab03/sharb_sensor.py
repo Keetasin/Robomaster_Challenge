@@ -7,13 +7,14 @@ right_data = []
 left_time_data = []
 right_time_data = []
 
+
 def sub_data_handler(sub_info):
     io_data, ad_data = sub_info
     
     distances = []
     for adc_value in ad_data:
         voltage = adc_value * 3.3 / 1023
-        print(voltage)
+        # print(voltage)
         # Adjusted piecewise linear approximation
         if 2.2 <= voltage < 3.2:
             distance = (voltage - 4.30764) / -0.3846
@@ -38,7 +39,13 @@ def sub_data_handler(sub_info):
     left_time_data.append(time.time())
     right_time_data.append(time.time())
     
-    if left >= 22:
+
+    if 9 <= left <= 13:
+        left += 1
+    elif 14 <= left <= 16:  
+        left += 3
+
+    if left >= 12.9:
         left = 50
     if right >= 22:
         right = 50
@@ -57,6 +64,7 @@ if __name__ == '__main__':
 
     ep_sensor = ep_robot.sensor_adaptor
     ep_sensor.sub_adapter(freq=5, callback=sub_data_handler)
+    time.sleep(20)
     time.sleep(20)
     ep_sensor.unsub_adapter()
     ep_robot.close()
