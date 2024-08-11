@@ -218,7 +218,7 @@ if __name__ == '__main__':
         time.sleep(0.5)
 
         while True:
-            if tof_data[-1] < 400:
+            if tof_data[-1] < 300:
                 ep_chassis.drive_wheels(w1=-20, w2=-20, w3=-20, w4=-20) 
                 print(tof_data[-1])
                 print('back')

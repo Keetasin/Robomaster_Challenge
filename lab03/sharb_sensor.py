@@ -28,7 +28,7 @@ def sub_data_handler(sub_info):
             if voltage >= 3.2:
                 distance = (voltage - 4.30764) / -0.3846
             elif voltage < 0.4:
-                distance = (voltage - 1.344) / -0.034
+                distance = 50.0
 
         distances.append(distance)
 
@@ -39,7 +39,6 @@ def sub_data_handler(sub_info):
     left_time_data.append(time.time())
     right_time_data.append(time.time())
     
-
     if 9 <= left <= 13:
         left += 1
     elif 14 <= left <= 16:  
@@ -47,12 +46,12 @@ def sub_data_handler(sub_info):
 
     if left >= 12.9:
         left = 50
-    if right >= 22:
+    if right >= 30:
         right = 50
     if distance == 0:
         print("!" * 15)
         
-    print("ad_data", ad_data)
+    # print("ad_data", ad_data)
     print(f"port1 left: {left}, port2 right: {right}")
 
     return distances
@@ -64,7 +63,6 @@ if __name__ == '__main__':
 
     ep_sensor = ep_robot.sensor_adaptor
     ep_sensor.sub_adapter(freq=5, callback=sub_data_handler)
-    time.sleep(20)
-    time.sleep(20)
+    time.sleep(60)
     ep_sensor.unsub_adapter()
     ep_robot.close()
