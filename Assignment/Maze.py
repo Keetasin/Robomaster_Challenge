@@ -19,6 +19,7 @@ current_left = 0.0
 current_right = 0.0
 x = True
 count1 = 0
+yaw = None
 
 # Grid initialization
 
@@ -26,6 +27,11 @@ def sub_position_handler(position_info):
     x, y, z = position_info
     # print("chassis position: x:{:.2f}, y:{:.2f}, z:{:.2f}".format(x, y, z))
     position_data.append((round(x,2), (round(y,2)), (round(z,2))))
+
+def sub_attitude_info_handler(attitude_info):
+    global yaw
+    yaw, pitch, roll = attitude_info
+    # print("chassis attitude: yaw:{0}, pitch:{1}, roll:{2} ".format(yaw, pitch, roll))
 
 
 def sub_tof_handler(tof_info):
@@ -64,9 +70,14 @@ def sub_data_handler(sub_info):
     left_time_data.append(time.time())
     right_time_data.append(time.time())
     
-    if left >= 24:
+    if 9 <= left <= 13:
+        left += 1
+    elif 14 <= left <= 16:  
+        left += 3
+
+    if left >= 12.9:
         left = 50
-    if right >= 24:
+    if right >= 30:
         right = 50
     if distance == 0:
         print("!" * 15)
@@ -83,29 +94,32 @@ def move_until_tof_less_than(ep_chassis, threshold_distance, overall_start_time,
     global current_left, current_right, count1, x 
 
     while True:
-        if position_data:
-            x_vals = [pos[0] for pos in position_data]
-            y_vals = [pos[1] for pos in position_data]
-            ax.clear()
-            ax.plot(y_vals, x_vals, 'ro-', label="Robot Path")
-            ax.set_xlabel('X Position (cm)')
-            ax.set_ylabel('Y Position (cm)')
-            ax.set_title('Real-time Robot Path')
-            ax.grid(True)
-            plt.draw()
-            plt.pause(0.01)  # หน่วงเวลาเพื่อให้กราฟอัปเดตได้ทันที
-        print('x = ', x)
+        # if position_data:
+        #     x_vals = [pos[0] for pos in position_data]
+        #     y_vals = [pos[1] for pos in position_data]
+        #     ax.clear()
+        #     ax.plot(y_vals, x_vals , label="Robot Path")
+        #     ax.set_xlabel('X Position (cm)')
+        #     ax.set_ylabel('Y Position (cm)')
+        #     ax.set_title('Real-time Robot Path')
+        #     ax.grid(True)
+        #     plt.draw()
+        #     plt.pause(0.01)  # หน่วงเวลาเพื่อให้กราฟอัปเดตได้ทันที
+        
 
         if tof_data and tof_data[-1] < threshold_distance:
+            ep_chassis.drive_wheels(w1=0, w2=0, w3=0, w4=0)  
             print(tof_data[-1])
+            count1 = 0
+            print(count1)
             break
 
-        if current_right <= 11 :
+        if current_right <= 12 :
             ep_chassis.drive_wheels(w1=0, w2=0, w3=0, w4=0)  
             ep_chassis.drive_wheels(w1=17, w2=-17, w3=17, w4=-17)  
             print(current_right)
             print('<')
-        if current_left <= 11:
+        if current_left <= 12:
             ep_chassis.drive_wheels(w1=0, w2=0, w3=0, w4=0)  
             ep_chassis.drive_wheels(w1=-17, w2=17, w3=-17, w4=17)  
             print(current_left)
@@ -113,22 +127,26 @@ def move_until_tof_less_than(ep_chassis, threshold_distance, overall_start_time,
 
         if x  and current_right >= 49:
             ep_chassis.drive_wheels(w1=0, w2=0, w3=0, w4=0) 
+            ep_chassis.move(x=0.1, y=0, z=0, xy_speed=0.2).wait_for_completed()
+            ep_chassis.drive_wheels(w1=0, w2=0, w3=0, w4=0) 
             print(current_right)
-            print('*')
+            print('*****************************')
             break
 
         else:
-            ep_chassis.drive_wheels(w1=55, w2=55, w3=55, w4=55) 
+            ep_chassis.drive_wheels(w1=45, w2=45, w3=45, w4=45) 
 
 
         if count1 == 15:
             x = True
             print(x)
+            print('x = ', x)
             count1 = 0
             print('re right xxxxxxxxxxxxxx') 
         if count1 >= 1:
             count1 += 1
             print(count1)
+            print('x = ', x)
 
         list_current_x.append((current_x, current_y))
         time_data.append(time.time() - overall_start_time)
@@ -136,19 +154,36 @@ def move_until_tof_less_than(ep_chassis, threshold_distance, overall_start_time,
         time.sleep(0.1)  # Control frequency
 
     ep_chassis.drive_wheels(w1=0, w2=0, w3=0, w4=0)
-    time.sleep(0.5)
+    time.sleep(0.2)
 
 def rotate_180_degrees(ep_chassis):  
-    ep_chassis.move(x=0, y=0, z=180, xy_speed=15).wait_for_completed()
-    time.sleep(0.5)
+    ep_chassis.move(x=0, y=0, z=180, z_speed=45).wait_for_completed()
+    time.sleep(0.2)
 
 def rotate_left(ep_chassis):  
-    ep_chassis.move(x=0, y=0, z=90, xy_speed=15).wait_for_completed()
-    time.sleep(0.5)
+    ep_chassis.move(x=0, y=0, z=90, z_speed=45).wait_for_completed()
+    time.sleep(0.2)
 
 def rotate_right(ep_chassis):  
-    ep_chassis.move(x=0, y=0, z=-90, xy_speed=15).wait_for_completed()
-    time.sleep(0.5)
+    ep_chassis.move(x=0, y=0, z=-90, z_speed=45).wait_for_completed()
+    time.sleep(0.2)
+
+
+def adjust_angle(yaw):
+    target_yaw = 0
+    if -135 < yaw <= -45:
+        target_yaw = -90
+    elif 45 < yaw < 135:
+        target_yaw = 90
+    elif -45 < yaw <= 45:
+        target_yaw = 0
+    elif 135 <= yaw <= 225 :
+        target_yaw = 180 
+    elif -225 < yaw <= -135:
+        target_yaw = -180
+    
+    ep_chassis.move(x=0, y=0, z= -(target_yaw - yaw), z_speed=45).wait_for_completed()
+    print('adjust',yaw)
 
 
 if __name__ == '__main__':
@@ -160,6 +195,7 @@ if __name__ == '__main__':
     ep_gimbal = ep_robot.gimbal
 
     ep_chassis.sub_position(freq=10, callback=sub_position_handler)
+    ep_chassis.sub_attitude(freq=10, callback=sub_attitude_info_handler)
     ep_sensor.sub_distance(freq=10, callback=sub_tof_handler)
     ep_sensor_adaptor.sub_adapter(freq=10, callback=sub_data_handler)  # Subscribe to analog data
     time.sleep(1)
@@ -171,37 +207,44 @@ if __name__ == '__main__':
     time.sleep(0.5)
 
     # สร้างแผนที่
-    plt.ion()  # เปิดโหมด interactive
-    fig, ax = plt.subplots()
+    # plt.ion()  # เปิดโหมด interactive
+    # fig, ax = plt.subplots()
 
     while True:
 
-        move_until_tof_less_than(ep_chassis, 350, overall_start_time, time_data, list_current_x)  
+        move_until_tof_less_than(ep_chassis, 290, overall_start_time, time_data, list_current_x)  
 
         ep_chassis.drive_wheels(w1=0, w2=0, w3=0, w4=0)  
         time.sleep(0.5)
 
         while True:
-            if current_right <= 11:
+            if tof_data[-1] < 400:
+                ep_chassis.drive_wheels(w1=-20, w2=-20, w3=-20, w4=-20) 
+                print(tof_data[-1])
+                print('back')
+
+            if current_right <= 12:
                 # ep_chassis.drive_wheels(w1=0, w2=0, w3=0, w4=0)  
                 ep_chassis.drive_wheels(w1=17, w2=-17, w3=17, w4=-17) 
                 print(current_right)
                 print('<-') 
-            if current_left <= 11:
+
+            if current_left <= 12:
                 # ep_chassis.drive_wheels(w1=0, w2=0, w3=0, w4=0)  
                 ep_chassis.drive_wheels(w1=-17, w2=17, w3=-17, w4=17)  
                 print(current_left)
                 print('->') 
+
             else:
                 ep_chassis.drive_wheels(w1=0, w2=0, w3=0, w4=0)  
                 print(current_right, current_left)
                 print('ok')
                 print('-'*10)
                 break  
-        time.sleep(0.5)
+        time.sleep(0.2)
 
         
-        ep_gimbal.moveto(pitch=0, yaw=90, pitch_speed=0, yaw_speed=40).wait_for_completed()
+        ep_gimbal.moveto(pitch=0, yaw=90, pitch_speed=0, yaw_speed=200).wait_for_completed()
         time.sleep(0.2)
 
         if tof_data and tof_data[-1] >= 700:
@@ -211,9 +254,9 @@ if __name__ == '__main__':
             print(count1)
             rotate_right(ep_chassis)
         else:
-            ep_gimbal.recenter().wait_for_completed()
+            ep_gimbal.recenter(yaw_speed=200).wait_for_completed()
             time.sleep(0.2)
-            ep_gimbal.moveto(pitch=0, yaw=-90, pitch_speed=0, yaw_speed=40).wait_for_completed()
+            ep_gimbal.moveto(pitch=0, yaw=-90, pitch_speed=0, yaw_speed=200).wait_for_completed()
             time.sleep(0.2)
             if tof_data and tof_data[-1] >= 700:
                 print(tof_data[-1])
@@ -222,19 +265,22 @@ if __name__ == '__main__':
                 print(count1)
                 rotate_left(ep_chassis)
             else:
-                ep_gimbal.recenter().wait_for_completed()
+                ep_gimbal.recenter(yaw_speed=200).wait_for_completed()
                 time.sleep(0.2)
                 rotate_180_degrees(ep_chassis)
        
 
-        ep_gimbal.recenter().wait_for_completed()
+        ep_gimbal.recenter(yaw_speed=200).wait_for_completed()
         time.sleep(0.2)
+        # adjust_angle(yaw)
+        # time.sleep(0.2)
 
         if tof_data and tof_data[-1] >= 5000 and current_left >= 49 and current_left >= 49: 
             print(tof_data[-1], current_right, current_left)
             break
 
     ep_chassis.unsub_position()
+    ep_chassis.unsub_attitude()
     ep_sensor.unsub_distance()
     ep_sensor_adaptor.unsub_adapter()
     ep_robot.close()
