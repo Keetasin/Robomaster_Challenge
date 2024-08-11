@@ -171,19 +171,23 @@ def rotate_right(ep_chassis):
 
 def adjust_angle(yaw):
     target_yaw = 0
+    correction = yaw
+
     if -135 < yaw <= -45:
         target_yaw = -90
+        ep_chassis.move(x=0, y=0, z=correction-target_yaw, xy_speed=20).wait_for_completed()  
     elif 45 < yaw < 135:
         target_yaw = 90
+        ep_chassis.move(x=0, y=0, z=correction-target_yaw, xy_speed=20).wait_for_completed()
     elif -45 < yaw <= 45:
         target_yaw = 0
-    elif 135 <= yaw <= 225 :
-        target_yaw = 180 
-    elif -225 < yaw <= -135:
+        ep_chassis.move(x=0, y=0, z=correction, xy_speed=20).wait_for_completed()
+    elif -180 <= yaw < -135 :
         target_yaw = -180
-    
-    ep_chassis.move(x=0, y=0, z= -(target_yaw - yaw), z_speed=45).wait_for_completed()
-    print('adjust',yaw)
+        ep_chassis.move(x=0, y=0, z=correction-target_yaw, xy_speed=20).wait_for_completed() 
+    elif 135 < yaw <= 180:
+        target_yaw = 180
+        ep_chassis.move(x=0, y=0, z=correction-target_yaw, xy_speed=20).wait_for_completed() 
 
 
 if __name__ == '__main__':
