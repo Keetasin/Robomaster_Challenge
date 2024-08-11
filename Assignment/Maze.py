@@ -276,8 +276,8 @@ if __name__ == '__main__':
 
         ep_gimbal.recenter(yaw_speed=200).wait_for_completed()
         time.sleep(0.2)
-        # adjust_angle(yaw)
-        # time.sleep(0.2)
+        adjust_angle(yaw)
+        time.sleep(0.2)
 
         if tof_data and tof_data[-1] >= 5000 and current_left >= 49 and current_left >= 49: 
             print(tof_data[-1], current_right, current_left)
