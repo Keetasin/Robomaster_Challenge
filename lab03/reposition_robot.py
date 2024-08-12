@@ -66,19 +66,19 @@ if __name__ == '__main__':
 
     if -135 < yaw <= -45:
         target_yaw = -90
-        ep_chassis.move(x=0, y=0, z=correction-target_yaw, xy_speed=20).wait_for_completed()  
+        ep_chassis.move(x=0, y=0, z=correction-target_yaw, z_speed=20).wait_for_completed()  
     elif 45 < yaw < 135:
         target_yaw = 90
-        ep_chassis.move(x=0, y=0, z=correction-target_yaw, xy_speed=20).wait_for_completed()
+        ep_chassis.move(x=0, y=0, z=correction-target_yaw, z_speed=20).wait_for_completed()
     elif -45 < yaw <= 45:
         target_yaw = 0
-        ep_chassis.move(x=0, y=0, z=correction, xy_speed=20).wait_for_completed()
+        ep_chassis.move(x=0, y=0, z=correction, z_speed=20).wait_for_completed()
     elif -180 <= yaw < -135 :
         target_yaw = -180
-        ep_chassis.move(x=0, y=0, z=correction-target_yaw, xy_speed=20).wait_for_completed() 
+        ep_chassis.move(x=0, y=0, z=correction-target_yaw, z_speed=20).wait_for_completed() 
     elif 135 < yaw <= 180:
         target_yaw = 180
-        ep_chassis.move(x=0, y=0, z=correction-target_yaw, xy_speed=20).wait_for_completed() 
+        ep_chassis.move(x=0, y=0, z=correction-target_yaw, z_speed=20).wait_for_completed() 
     #     target_yaw = -180
 
     # ep_chassis.move(x=0, y=0, z=correction, xy_speed=20).wait_for_completed()
