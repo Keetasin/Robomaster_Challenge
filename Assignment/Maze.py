@@ -98,7 +98,7 @@ def sub_data_handler(sub_info):
     current_left = sharp_left
 
     # print(f"PORT2 right: {sharp_right}")
-    # print(f"PORT1 left: {sharp_left}, PORT2 right: {sharp_right}")
+    print(f"PORT1 left: {sharp_left}, PORT2 right: {sharp_right}")
     
     return distances
 
@@ -106,17 +106,17 @@ def move_until_tof_less_than(ep_chassis, threshold_distance, overall_start_time,
     global current_left, current_right, count1, x 
 
     while True:
-        # if position_data:
-        #     x_vals = [pos[0] for pos in position_data]
-        #     y_vals = [pos[1] for pos in position_data]
-        #     ax.clear()
-        #     ax.plot(y_vals, x_vals ,'*-', label="Robot Path")
-        #     ax.set_xlabel('X Position (cm)')
-        #     ax.set_ylabel('Y Position (cm)')
-        #     ax.set_title('Real-time Robot Path')
-        #     ax.grid(True)
-        #     plt.draw()
-        #     plt.pause(0.01)  # หน่วงเวลาเพื่อให้กราฟอัปเดตได้ทันที
+        if position_data:
+            x_vals = [pos[0] for pos in position_data]
+            y_vals = [pos[1] for pos in position_data]
+            ax.clear()
+            ax.plot(y_vals, x_vals ,'*-', label="Robot Path")
+            ax.set_xlabel('Y Position (cm)')
+            ax.set_ylabel('X Position (cm)')
+            ax.set_title('Real-time Robot Path')
+            ax.grid(True)
+            plt.draw()
+            plt.pause(0.01)  # หน่วงเวลาเพื่อให้กราฟอัปเดตได้ทันที
         
 
         if tof_data and tof_data[-1] < threshold_distance:
@@ -215,17 +215,17 @@ if __name__ == '__main__':
     ep_chassis.sub_attitude(freq=10, callback=sub_attitude_info_handler)
     ep_sensor.sub_distance(freq=10, callback=sub_tof_handler)
     ep_sensor_adaptor.sub_adapter(freq=10, callback=sub_data_handler)  # Subscribe to analog data
-    time.sleep(0.2)
+    time.sleep(0.1)
 
     time_data, list_current_x = [], []
     overall_start_time = time.time()
 
     ep_gimbal.recenter().wait_for_completed()
-    time.sleep(0.1)
+    time.sleep(0.05)
 
     # สร้างแผนที่
-    # plt.ion()  # เปิดโหมด interactive
-    # fig, ax = plt.subplots()
+    plt.ion()  
+    fig, ax = plt.subplots()
 
     while True:
 
@@ -263,7 +263,7 @@ if __name__ == '__main__':
                 print('ok')
                 print('-'*10)
                 break  
-        time.sleep(0.2)
+        time.sleep(0.1)
 
         
         # ep_gimbal.moveto(pitch=0, yaw=90, pitch_speed=0, yaw_speed=200).wait_for_completed()
