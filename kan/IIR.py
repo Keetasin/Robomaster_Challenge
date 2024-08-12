@@ -6,7 +6,7 @@ sharp_right_data = []
 
 def filter_adc_value(ad_data):
     y_filtered = []
-    alpha = 0.8  # ตั้งค่า alpha ตามความต้องการ
+    alpha = 0.1  # ตั้งค่า alpha ตามความต้องการ
     y_prev = 0  # ค่าเริ่มต้นของ y[n-1]
 
     for adc_value in ad_data: # 153, 153, 203, 203
@@ -47,6 +47,16 @@ def sub_data_handler(sub_info):
     sharp_right = sum(distances[2:4]) / 2
     sharp_left_data.append(sharp_left)
     sharp_right_data.append(sharp_right)
+    
+    # Error left 
+    if sharp_left >= 13:
+        sharp_left += 2
+    
+    # ตัดช่วง
+    if left >= 20:
+        left = 50
+    if right >= 25:
+        right = 50
 
     print(f"PORT1 left: {sharp_left}, PORT2 right: {sharp_right}")
     
@@ -68,9 +78,9 @@ if __name__ == '__main__':
     ep_sensor_adaptor = ep_robot.sensor_adaptor
 
     ep_sensor.sub_distance(freq=5, callback=sub_tof_handler)
-    ep_sensor.sub_adapter(freq=5, callback=sub_data_handler)
+    ep_sensor_adaptor.sub_adapter(freq=5, callback=sub_data_handler)
 
-    time.sleep(20)
+    time.sleep(60)
 
     ep_sensor.unsub_distance()
     ep_sensor_adaptor.unsub_adapter()
