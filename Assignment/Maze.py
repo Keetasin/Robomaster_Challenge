@@ -1,5 +1,5 @@
 import time
-import csv
+# import csv
 import matplotlib.animation as animation
 import matplotlib.pyplot as plt
 import numpy as np
@@ -10,11 +10,11 @@ current_x = 0.0
 current_y = 0.0
 position_data = []
 tof_data = []
-tof_time_data = []
+# tof_time_data = []
 left_data = []
 right_data = []
-left_time_data = []
-right_time_data = []
+# left_time_data = []
+# right_time_data = []
 current_left = 0.0
 current_right = 0.0
 x = True
@@ -36,16 +36,32 @@ def sub_attitude_info_handler(attitude_info):
 
 def sub_tof_handler(tof_info):
     tof_data.append(tof_info[0])
-    tof_time_data.append(time.time())
+    # tof_time_data.append(time.time())
+
+
+def filter_adc_value(ad_data):
+    y_filtered = []
+    alpha = 0.1  # ตั้งค่า alpha ตามความต้องการ
+    y_prev = 0  # ค่าเริ่มต้นของ y[n-1]
+
+    for adc_value in ad_data: # 153, 153, 203, 203
+        y_current = alpha * y_prev + (1 - alpha) * adc_value
+        y_filtered.append(y_current)
+        y_prev = y_current
+
+    return y_filtered # 150, 150, 200, 200
 
 def sub_data_handler(sub_info):
     global current_left, current_right
     io_data, ad_data = sub_info
     
+    # กรองค่า ADC
+    y_filtered = filter_adc_value(ad_data)
+
     distances = []
-    for adc_value in ad_data:
-        voltage = adc_value * 3.3 / 1023
-        # print(voltage)
+    for adc_filtered in  y_filtered:
+        voltage = adc_filtered * 3.3 / 1023
+
         # Adjusted piecewise linear approximation
         if 2.2 <= voltage < 3.2:
             distance = (voltage - 4.30764) / -0.3846
@@ -59,35 +75,31 @@ def sub_data_handler(sub_info):
             if voltage >= 3.2:
                 distance = (voltage - 4.30764) / -0.3846
             elif voltage < 0.4:
-                distance = 50.0
+                distance = (voltage - 1.344) / -0.034
 
         distances.append(distance)
-
-    left = sum(distances[0:2]) / 2
-    right = sum(distances[2:4]) / 2
-    left_data.append(left)
-    right_data.append(right)
-    left_time_data.append(time.time())
-    right_time_data.append(time.time())
     
-    if 9 <= left <= 13:
-        left += 1
-    elif 14 <= left <= 16:  
-        left += 3
+    sharp_left = sum(distances[0:2]) / 2
+    sharp_right = sum(distances[2:4]) / 2
+    left_data.append(sharp_left)
+    right_data.append(sharp_right)
+    
+    # Error left 
+    if sharp_left >= 13:
+        sharp_left += 2
+    
+    # ตัดช่วง
+    if sharp_left >= 20:
+        sharp_left = 50
+    if sharp_right >= 26:
+        sharp_right = 50
 
-    if left >= 12.9:
-        left = 50
-    if right >= 30:
-        right = 50
-    if distance == 0:
-        print("!" * 15)
-        
-    # print("ad_data", ad_data)
-    current_right = right
-    current_left = left
-    # print(f"port1 left: {left}, port2 right: {right}")
-    print('right = ', right)
+    current_right = sharp_right
+    current_left = sharp_left
 
+    # print(f"PORT2 right: {sharp_right}")
+    # print(f"PORT1 left: {sharp_left}, PORT2 right: {sharp_right}")
+    
     return distances
 
 def move_until_tof_less_than(ep_chassis, threshold_distance, overall_start_time, time_data, list_current_x):
@@ -98,7 +110,7 @@ def move_until_tof_less_than(ep_chassis, threshold_distance, overall_start_time,
         #     x_vals = [pos[0] for pos in position_data]
         #     y_vals = [pos[1] for pos in position_data]
         #     ax.clear()
-        #     ax.plot(y_vals, x_vals , label="Robot Path")
+        #     ax.plot(y_vals, x_vals ,'*-', label="Robot Path")
         #     ax.set_xlabel('X Position (cm)')
         #     ax.set_ylabel('Y Position (cm)')
         #     ax.set_title('Real-time Robot Path')
@@ -109,32 +121,33 @@ def move_until_tof_less_than(ep_chassis, threshold_distance, overall_start_time,
 
         if tof_data and tof_data[-1] < threshold_distance:
             ep_chassis.drive_wheels(w1=0, w2=0, w3=0, w4=0)  
-            print(tof_data[-1])
+            print('TOF = ', tof_data[-1],'+++++++++++++')
             count1 = 0
             print(count1)
             break
 
-        if current_right <= 12 :
-            ep_chassis.drive_wheels(w1=0, w2=0, w3=0, w4=0)  
-            ep_chassis.drive_wheels(w1=17, w2=-17, w3=17, w4=-17)  
-            print(current_right)
-            print('<')
-        if current_left <= 12:
-            ep_chassis.drive_wheels(w1=0, w2=0, w3=0, w4=0)  
-            ep_chassis.drive_wheels(w1=-17, w2=17, w3=-17, w4=17)  
-            print(current_left)
-            print('>')
-
-        if x  and current_right >= 49:
+        elif x  and current_right >= 49:
             ep_chassis.drive_wheels(w1=0, w2=0, w3=0, w4=0) 
-            ep_chassis.move(x=0.1, y=0, z=0, xy_speed=0.2).wait_for_completed()
-            ep_chassis.drive_wheels(w1=0, w2=0, w3=0, w4=0) 
+            # ep_chassis.move(x=0.07, y=0, z=0, xy_speed=0.1).wait_for_completed()
+            # ep_chassis.drive_wheels(w1=0, w2=0, w3=0, w4=0) 
+            time.sleep(0.05)
             print(current_right)
             print('*****************************')
             break
 
+        elif current_right <= 10 :
+            # ep_chassis.drive_wheels(w1=0, w2=0, w3=0, w4=0)  
+            ep_chassis.drive_wheels(w1=15, w2=-15, w3=15, w4=-15)  
+            print(current_right)
+            print('<')
+        elif current_left <= 10:
+            # ep_chassis.drive_wheels(w1=0, w2=0, w3=0, w4=0)  
+            ep_chassis.drive_wheels(w1=-15, w2=15, w3=-15, w4=15)  
+            print(current_left)
+            print('>')
+
         else:
-            ep_chassis.drive_wheels(w1=45, w2=45, w3=45, w4=45) 
+            ep_chassis.drive_wheels(w1=50, w2=50, w3=50, w4=50) 
 
 
         if count1 == 15:
@@ -154,19 +167,19 @@ def move_until_tof_less_than(ep_chassis, threshold_distance, overall_start_time,
         time.sleep(0.1)  # Control frequency
 
     ep_chassis.drive_wheels(w1=0, w2=0, w3=0, w4=0)
-    time.sleep(0.2)
+    time.sleep(0.1)
 
 def rotate_180_degrees(ep_chassis):  
-    ep_chassis.move(x=0, y=0, z=180, z_speed=45).wait_for_completed()
-    time.sleep(0.2)
+    ep_chassis.move(x=0, y=0, z=180, z_speed=80).wait_for_completed()
+    time.sleep(0.1)
 
 def rotate_left(ep_chassis):  
-    ep_chassis.move(x=0, y=0, z=90, z_speed=45).wait_for_completed()
-    time.sleep(0.2)
+    ep_chassis.move(x=0, y=0, z=90, z_speed=80).wait_for_completed()
+    time.sleep(0.1)
 
 def rotate_right(ep_chassis):  
-    ep_chassis.move(x=0, y=0, z=-90, z_speed=45).wait_for_completed()
-    time.sleep(0.2)
+    ep_chassis.move(x=0, y=0, z=-90, z_speed=80).wait_for_completed()
+    time.sleep(0.1)
 
 
 def adjust_angle(yaw):
@@ -175,19 +188,19 @@ def adjust_angle(yaw):
 
     if -135 < yaw <= -45:
         target_yaw = -90
-        ep_chassis.move(x=0, y=0, z=correction-target_yaw, xy_speed=20).wait_for_completed()  
+        ep_chassis.move(x=0, y=0, z=correction-target_yaw, z_speed=20).wait_for_completed()  
     elif 45 < yaw < 135:
         target_yaw = 90
-        ep_chassis.move(x=0, y=0, z=correction-target_yaw, xy_speed=20).wait_for_completed()
+        ep_chassis.move(x=0, y=0, z=correction-target_yaw, z_speed=20).wait_for_completed()
     elif -45 < yaw <= 45:
         target_yaw = 0
-        ep_chassis.move(x=0, y=0, z=correction, xy_speed=20).wait_for_completed()
+        ep_chassis.move(x=0, y=0, z=correction, z_speed=20).wait_for_completed()
     elif -180 <= yaw < -135 :
         target_yaw = -180
-        ep_chassis.move(x=0, y=0, z=correction-target_yaw, xy_speed=20).wait_for_completed() 
+        ep_chassis.move(x=0, y=0, z=correction-target_yaw, z_speed=20).wait_for_completed() 
     elif 135 < yaw <= 180:
         target_yaw = 180
-        ep_chassis.move(x=0, y=0, z=correction-target_yaw, xy_speed=20).wait_for_completed() 
+        ep_chassis.move(x=0, y=0, z=correction-target_yaw, z_speed=20).wait_for_completed() 
 
 
 if __name__ == '__main__':
@@ -202,13 +215,13 @@ if __name__ == '__main__':
     ep_chassis.sub_attitude(freq=10, callback=sub_attitude_info_handler)
     ep_sensor.sub_distance(freq=10, callback=sub_tof_handler)
     ep_sensor_adaptor.sub_adapter(freq=10, callback=sub_data_handler)  # Subscribe to analog data
-    time.sleep(1)
+    time.sleep(0.2)
 
     time_data, list_current_x = [], []
     overall_start_time = time.time()
 
     ep_gimbal.recenter().wait_for_completed()
-    time.sleep(0.5)
+    time.sleep(0.1)
 
     # สร้างแผนที่
     # plt.ion()  # เปิดโหมด interactive
@@ -216,26 +229,31 @@ if __name__ == '__main__':
 
     while True:
 
-        move_until_tof_less_than(ep_chassis, 290, overall_start_time, time_data, list_current_x)  
+        move_until_tof_less_than(ep_chassis, 300, overall_start_time, time_data, list_current_x)  
 
         ep_chassis.drive_wheels(w1=0, w2=0, w3=0, w4=0)  
-        time.sleep(0.5)
+        time.sleep(0.1)
 
         while True:
-            if tof_data[-1] < 300:
+            if tof_data[-1] < 190:
                 ep_chassis.drive_wheels(w1=-20, w2=-20, w3=-20, w4=-20) 
                 print(tof_data[-1])
                 print('back')
 
-            if current_right <= 12:
+            elif tof_data[-1] > 310 and tof_data[-1] < 410:
+                ep_chassis.drive_wheels(w1=20, w2=20, w3=20, w4=20) 
+                print(tof_data[-1])
+                print('forword')
+            
+            elif current_right <= 10:
                 # ep_chassis.drive_wheels(w1=0, w2=0, w3=0, w4=0)  
-                ep_chassis.drive_wheels(w1=17, w2=-17, w3=17, w4=-17) 
+                ep_chassis.drive_wheels(w1=15, w2=-15, w3=15, w4=-15) 
                 print(current_right)
                 print('<-') 
 
-            if current_left <= 12:
+            elif current_left <= 10:
                 # ep_chassis.drive_wheels(w1=0, w2=0, w3=0, w4=0)  
-                ep_chassis.drive_wheels(w1=-17, w2=17, w3=-17, w4=17)  
+                ep_chassis.drive_wheels(w1=-15, w2=15, w3=-15, w4=15)  
                 print(current_left)
                 print('->') 
 
@@ -248,38 +266,47 @@ if __name__ == '__main__':
         time.sleep(0.2)
 
         
-        ep_gimbal.moveto(pitch=0, yaw=90, pitch_speed=0, yaw_speed=200).wait_for_completed()
-        time.sleep(0.2)
+        # ep_gimbal.moveto(pitch=0, yaw=90, pitch_speed=0, yaw_speed=200).wait_for_completed()
+        # time.sleep(0.35)
 
-        if tof_data and tof_data[-1] >= 700:
-            print(tof_data[-1])
-            x = False
-            count1 +=1
-            print(count1)
-            rotate_right(ep_chassis)
+        # if tof_data and tof_data[-1] >= 600:
+        #     print(tof_data[-1])
+        #     x = False
+        #     count1 +=1
+        #     print(count1)
+        #     rotate_right(ep_chassis)
+
+        if current_right >= 49:
+                print('turn right ', current_right)
+                x = False
+                count1 +=1
+                print(count1)
+                rotate_right(ep_chassis)
+
         else:
             ep_gimbal.recenter(yaw_speed=200).wait_for_completed()
-            time.sleep(0.2)
+            time.sleep(0.1)
             ep_gimbal.moveto(pitch=0, yaw=-90, pitch_speed=0, yaw_speed=200).wait_for_completed()
-            time.sleep(0.2)
-            if tof_data and tof_data[-1] >= 700:
+            time.sleep(0.35)
+            if tof_data and tof_data[-1] >= 600:
                 print(tof_data[-1])
                 x = False
                 count1 +=1
                 print(count1)
                 rotate_left(ep_chassis)
             else:
-                ep_gimbal.recenter(yaw_speed=200).wait_for_completed()
-                time.sleep(0.2)
+                # ep_gimbal.recenter(yaw_speed=200).wait_for_completed()
+                # time.sleep(0.1)
                 rotate_180_degrees(ep_chassis)
        
 
         ep_gimbal.recenter(yaw_speed=200).wait_for_completed()
-        time.sleep(0.2)
+        time.sleep(0.1)
         adjust_angle(yaw)
-        time.sleep(0.2)
+        print('yaw = ', yaw)
+        time.sleep(0.1)
 
-        if tof_data and tof_data[-1] >= 5000 and current_left >= 49 and current_left >= 49: 
+        if tof_data and tof_data[-1] >= 6000 and current_left >= 49 and current_left >= 49: 
             print(tof_data[-1], current_right, current_left)
             break
 
@@ -289,41 +316,41 @@ if __name__ == '__main__':
     ep_sensor_adaptor.unsub_adapter()
     ep_robot.close()
 
-    # Save data to CSV
-    with open('chassis_data.csv', 'w', newline='') as csvfile:
-        fieldnames = ['timestamp', 'position_x', 'position_y', 'position_z', 'tof_distance', 'left_data', 'right_data']
-        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-        writer.writeheader()
-        for idx in range(max(len(tof_time_data), len(left_time_data), len(right_time_data))):
-            row = {'position_x': position_data[idx][0] if idx < len(position_data) else '',
-                   'position_y': position_data[idx][1] if idx < len(position_data) else '',
-                   'position_z': position_data[idx][2] if idx < len(position_data) else '',
-                   'tof_distance': tof_data[idx] if idx < len(tof_data) else '',
-                   'left_data': left_data[idx] if idx < len(left_data) else '',
-                   'right_data': right_data[idx] if idx < len(right_data) else ''}
-            writer.writerow(row)
+    # # Save data to CSV
+    # with open('chassis_data.csv', 'w', newline='') as csvfile:
+    #     fieldnames = ['timestamp', 'position_x', 'position_y', 'position_z', 'tof_distance', 'left_data', 'right_data']
+    #     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+    #     writer.writeheader()
+    #     for idx in range(max(len(tof_time_data), len(left_time_data), len(right_time_data))):
+    #         row = {'position_x': position_data[idx][0] if idx < len(position_data) else '',
+    #                'position_y': position_data[idx][1] if idx < len(position_data) else '',
+    #                'position_z': position_data[idx][2] if idx < len(position_data) else '',
+    #                'tof_distance': tof_data[idx] if idx < len(tof_data) else '',
+    #                'left_data': left_data[idx] if idx < len(left_data) else '',
+    #                'right_data': right_data[idx] if idx < len(right_data) else ''}
+    #         writer.writerow(row)
 
-    # Plotting data
-    plt.figure()
+    # # Plotting data
+    # plt.figure()
 
 
-    plt.subplot(2, 2, 2)
-    if tof_time_data:
-        time_series = [t - tof_time_data[0] for t in tof_time_data]
-        plt.plot(time_series, tof_data, label='Distance')
-    plt.title("TOF Data")
-    plt.legend()
+    # plt.subplot(2, 2, 2)
+    # if tof_time_data:
+    #     time_series = [t - tof_time_data[0] for t in tof_time_data]
+    #     plt.plot(time_series, tof_data, label='Distance')
+    # plt.title("TOF Data")
+    # plt.legend()
 
-    plt.subplot(2, 2, 3)
-    if left_time_data:
-        time_series = [t - left_time_data[0] for t in left_time_data]
-        plt.plot(time_series, left_data, label='Left Sensor')
-        plt.plot(time_series, right_data, label='Right Sensor')
-    plt.title("Left/Right Sensor Data")
-    plt.legend()
+    # plt.subplot(2, 2, 3)
+    # if left_time_data:
+    #     time_series = [t - left_time_data[0] for t in left_time_data]
+    #     plt.plot(time_series, left_data, label='Left Sensor')
+    #     plt.plot(time_series, right_data, label='Right Sensor')
+    # plt.title("Left/Right Sensor Data")
+    # plt.legend()
 
-    plt.tight_layout()
-    plt.show()
+    # plt.tight_layout()
+    # plt.show()
 
 
 
