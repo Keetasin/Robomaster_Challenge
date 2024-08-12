@@ -53,10 +53,10 @@ def sub_data_handler(sub_info):
         sharp_left += 2
     
     # ตัดช่วง
-    if left >= 20:
-        left = 50
-    if right >= 25:
-        right = 50
+    if sharp_left >= 20:
+        sharp_left = 50
+    if sharp_right >= 26:
+        sharp_right = 50
 
     print(f"PORT1 left: {sharp_left}, PORT2 right: {sharp_right}")
     
