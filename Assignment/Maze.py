@@ -251,12 +251,8 @@ if __name__ == '__main__':
                 rotate_right(ep_chassis)
 
         else:
-            # หัน gimbal ไปทางซ้าย
-            ep_gimbal.moveto(pitch=0, yaw=-90, pitch_speed=0, yaw_speed=200).wait_for_completed()
-            time.sleep(0.35)
-
             # หมุนหุ่นยนต์ไปทางซ้าย หากทางซ้ายไปได้
-            if tof_data and tof_data[-1] >= 600:
+            if current_left >= 49:
                 status = False
                 count +=1
                 rotate_left(ep_chassis)
