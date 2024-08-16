@@ -1,68 +1,62 @@
 import time
-# import csv
-import matplotlib.animation as animation
 import matplotlib.pyplot as plt
-import numpy as np
 from robomaster import robot
 
-# Global variables
-current_x = 0.0
-current_y = 0.0
+# กำหนดlist เพื่อเก็บข้อมูล เเละกำหนดตัวเเปรค่าเริ่มต้น
 position_data = []
 tof_data = []
-# tof_time_data = []
 left_data = []
 right_data = []
-# left_time_data = []
-# right_time_data = []
+current_x = 0.0
+current_y = 0.0
 current_left = 0.0
 current_right = 0.0
-x = True
-count1 = 0
+count = 0
 yaw = None
+status = True
 
-# Grid initialization
-
+# Function Callback สำหรับจัดการข้อมูลตำแหน่งจากเซ็นเซอร์
 def sub_position_handler(position_info):
     x, y, z = position_info
-    # print("chassis position: x:{:.2f}, y:{:.2f}, z:{:.2f}".format(x, y, z))
     position_data.append((round(x,2), (round(y,2)), (round(z,2))))
+    print("chassis position: x:{:.2f}, y:{:.2f}, z:{:.2f}".format(x, y, z))
 
+# Function Callback สำหรับจัดการข้อมูลท่าทาง (yaw, pitch, roll) ของหุ่นยนต์
 def sub_attitude_info_handler(attitude_info):
     global yaw
     yaw, pitch, roll = attitude_info
-    # print("chassis attitude: yaw:{0}, pitch:{1}, roll:{2} ".format(yaw, pitch, roll))
+    print("chassis attitude: yaw:{0}, pitch:{1}, roll:{2} ".format(yaw, pitch, roll))
 
-
+# Function Callback สำหรับจัดการข้อมูลจากเซ็นเซอร์ TOF
 def sub_tof_handler(tof_info):
     tof_data.append(tof_info[0])
-    # tof_time_data.append(time.time())
+    print(f'TOF: {tof_info[0]}')
 
-
+# Function กรองข้อมูลจาก ADC เพื่อให้ค่าเสถียรมากขึ้น
 def filter_adc_value(ad_data):
     y_filtered = []
-    alpha = 0.1  # ตั้งค่า alpha ตามความต้องการ
-    y_prev = 0  # ค่าเริ่มต้นของ y[n-1]
+    alpha = 0.1  # ค่าอัลฟาสำหรับการกรอง
+    y_prev = 0  # กำหนดค่าเริ่มต้นของ y_prev
 
-    for adc_value in ad_data: # 153, 153, 203, 203
+    for adc_value in ad_data: 
         y_current = alpha * y_prev + (1 - alpha) * adc_value
         y_filtered.append(y_current)
         y_prev = y_current
 
-    return y_filtered # 150, 150, 200, 200
+    return y_filtered 
 
+# Function Callback สำหรับจัดการข้อมูลจากเซ็นเซอร์ Sharp
 def sub_data_handler(sub_info):
     global current_left, current_right
     io_data, ad_data = sub_info
     
-    # กรองค่า ADC
     y_filtered = filter_adc_value(ad_data)
 
     distances = []
     for adc_filtered in  y_filtered:
         voltage = adc_filtered * 3.3 / 1023
 
-        # Adjusted piecewise linear approximation
+        # การคำนวณระยะทางจากแรงดันไฟฟ้า
         if 2.2 <= voltage < 3.2:
             distance = (voltage - 4.30764) / -0.3846
         elif 1.4 <= voltage < 2.2:
@@ -79,16 +73,16 @@ def sub_data_handler(sub_info):
 
         distances.append(distance)
     
+    # การคำนวณค่าเฉลี่ยของเซ็นเซอร์Sharpซ้ายและขวา
     sharp_left = sum(distances[0:2]) / 2
     sharp_right = sum(distances[2:4]) / 2
     left_data.append(sharp_left)
     right_data.append(sharp_right)
     
-    # Error left 
+    # ปรับค่า sharp_left และ sharp_right ตามเกณฑ์ที่กำหนด
     if sharp_left >= 13:
         sharp_left += 2
     
-    # ตัดช่วง
     if sharp_left >= 20:
         sharp_left = 50
     if sharp_right >= 26:
@@ -97,15 +91,15 @@ def sub_data_handler(sub_info):
     current_right = sharp_right
     current_left = sharp_left
 
-    # print(f"PORT2 right: {sharp_right}")
     print(f"PORT1 left: {sharp_left}, PORT2 right: {sharp_right}")
-    
     return distances
 
-def move_until_tof_less_than(ep_chassis, threshold_distance, overall_start_time, time_data, list_current_x):
-    global current_left, current_right, count1, x 
+# Function เคลื่อนที่ไปข้างหน้าจนกว่าจะเจอกำเเพงด้านหน้า หรือเจอทางทางขวาที่ไปได้
+def move_forword(ep_chassis, threshold_distance, overall_start_time, time_data, list_current_x):
+    global current_left, current_right, count, status 
 
     while True:
+        # แสดงผลเส้นทางการเคลื่อนที่ของหุ่นยนต์แบบเรียลไทม์
         if position_data:
             x_vals = [pos[0] for pos in position_data]
             y_vals = [pos[1] for pos in position_data]
@@ -116,72 +110,63 @@ def move_until_tof_less_than(ep_chassis, threshold_distance, overall_start_time,
             ax.set_title('Real-time Robot Path')
             ax.grid(True)
             plt.draw()
-            plt.pause(0.01)  # หน่วงเวลาเพื่อให้กราฟอัปเดตได้ทันที
+            plt.pause(0.01) 
         
-
+        # หยุดหุ่นยนต์หาก TOF น้อยกว่าค่า threshold (เจอกำเเพงด้านหน้า)
         if tof_data and tof_data[-1] < threshold_distance:
             ep_chassis.drive_wheels(w1=0, w2=0, w3=0, w4=0)  
-            print('TOF = ', tof_data[-1],'+++++++++++++')
-            count1 = 0
-            print(count1)
+            count = 0
             break
 
-        elif x  and current_right >= 49:
+        # หยุดหุ่นยนต์หากค่า current_right มากกว่า 49 (ทางขวาไปได้)
+        elif status and current_right >= 49:
             ep_chassis.drive_wheels(w1=0, w2=0, w3=0, w4=0) 
-            # ep_chassis.move(x=0.07, y=0, z=0, xy_speed=0.1).wait_for_completed()
-            # ep_chassis.drive_wheels(w1=0, w2=0, w3=0, w4=0) 
             time.sleep(0.05)
-            print(current_right)
-            print('*****************************')
             break
 
+        # current_right หรือ current_left ต่ำกว่า 10 ให้ขยับรถเข้ากลาง เพื่อไม่ให้ชนกำเเพง
         elif current_right <= 10 :
-            # ep_chassis.drive_wheels(w1=0, w2=0, w3=0, w4=0)  
             ep_chassis.drive_wheels(w1=15, w2=-15, w3=15, w4=-15)  
-            print(current_right)
-            print('<')
-        elif current_left <= 10:
-            # ep_chassis.drive_wheels(w1=0, w2=0, w3=0, w4=0)  
-            ep_chassis.drive_wheels(w1=-15, w2=15, w3=-15, w4=15)  
-            print(current_left)
-            print('>')
 
+        elif current_left <= 10:
+            ep_chassis.drive_wheels(w1=-15, w2=15, w3=-15, w4=15)  
+
+        # เคลื่อนที่ไปด้านหน้า
         else:
             ep_chassis.drive_wheels(w1=50, w2=50, w3=50, w4=50) 
 
+        # ปรับค่า count และ status
+        if count == 8:
+            status = True
+            count = 0
 
-        if count1 == 15:
-            x = True
-            print(x)
-            print('x = ', x)
-            count1 = 0
-            print('re right xxxxxxxxxxxxxx') 
-        if count1 >= 1:
-            count1 += 1
-            print(count1)
-            print('x = ', x)
+        if count >= 1:
+            count += 1
 
         list_current_x.append((current_x, current_y))
         time_data.append(time.time() - overall_start_time)
         
-        time.sleep(0.1)  # Control frequency
+        time.sleep(0.1)  
 
     ep_chassis.drive_wheels(w1=0, w2=0, w3=0, w4=0)
     time.sleep(0.1)
 
+# Functionหมุนหุ่นยนต์ 180 องศา
 def rotate_180_degrees(ep_chassis):  
     ep_chassis.move(x=0, y=0, z=180, z_speed=80).wait_for_completed()
     time.sleep(0.1)
 
+# Functionหมุนหุ่นยนต์ไปทางซ้าย 90 องศา
 def rotate_left(ep_chassis):  
     ep_chassis.move(x=0, y=0, z=90, z_speed=80).wait_for_completed()
     time.sleep(0.1)
 
+# Functionหมุนหุ่นยนต์ไปทางขวา 90 องศา
 def rotate_right(ep_chassis):  
     ep_chassis.move(x=0, y=0, z=-90, z_speed=80).wait_for_completed()
     time.sleep(0.1)
 
-
+# Function ปรับมุม yaw ของหุ่นยนต์ให้ตรงตามที่กำหนด
 def adjust_angle(yaw):
     target_yaw = 0
     correction = yaw
@@ -204,6 +189,7 @@ def adjust_angle(yaw):
 
 
 if __name__ == '__main__':
+    # เริ่มต้นการเชื่อมต่อกับหุ่นยนต์
     ep_robot = robot.Robot()
     ep_robot.initialize(conn_type="ap")
     ep_chassis = ep_robot.chassis
@@ -211,146 +197,88 @@ if __name__ == '__main__':
     ep_sensor_adaptor = ep_robot.sensor_adaptor
     ep_gimbal = ep_robot.gimbal
 
+    # สมัครสมาชิกเพื่อรับข้อมูลจากเซ็นเซอร์ต่าง ๆ
     ep_chassis.sub_position(freq=10, callback=sub_position_handler)
     ep_chassis.sub_attitude(freq=10, callback=sub_attitude_info_handler)
     ep_sensor.sub_distance(freq=10, callback=sub_tof_handler)
-    ep_sensor_adaptor.sub_adapter(freq=10, callback=sub_data_handler)  # Subscribe to analog data
+    ep_sensor_adaptor.sub_adapter(freq=10, callback=sub_data_handler)  
     time.sleep(0.1)
 
     time_data, list_current_x = [], []
     overall_start_time = time.time()
 
+    # รีเซ็ตตำแหน่ง gimbal ให้อยู่ในตำแหน่งกลาง
     ep_gimbal.recenter().wait_for_completed()
     time.sleep(0.05)
 
-    # สร้างแผนที่
+    # เริ่มplotเส้นทาง
     plt.ion()  
     fig, ax = plt.subplots()
 
     while True:
-
-        move_until_tof_less_than(ep_chassis, 300, overall_start_time, time_data, list_current_x)  
-
+        # เคลื่อนที่ไปข้างหน้าจนกว่า TOF จะน้อยกว่า 300 หรือเจอทางทางขวาที่ไปได้
+        move_forword(ep_chassis, 300, overall_start_time, time_data, list_current_x)  
         ep_chassis.drive_wheels(w1=0, w2=0, w3=0, w4=0)  
         time.sleep(0.1)
 
         while True:
-            if tof_data[-1] < 190:
+            # เคลื่อนที่ถอยหลังหาก TOF น้อยกว่า 160
+            if tof_data[-1] < 160:
                 ep_chassis.drive_wheels(w1=-20, w2=-20, w3=-20, w4=-20) 
-                print(tof_data[-1])
-                print('back')
 
+            # เคลื่อนที่ไปข้างหน้าหาก TOF อยู่ในช่วง 310-410
             elif tof_data[-1] > 310 and tof_data[-1] < 410:
                 ep_chassis.drive_wheels(w1=20, w2=20, w3=20, w4=20) 
-                print(tof_data[-1])
-                print('forword')
             
+            # เคลื่อนที่ไปทางซ้าย หาก current_right น้อยกว่า 10
             elif current_right <= 10:
-                # ep_chassis.drive_wheels(w1=0, w2=0, w3=0, w4=0)  
                 ep_chassis.drive_wheels(w1=15, w2=-15, w3=15, w4=-15) 
-                print(current_right)
-                print('<-') 
 
+            # เคลื่อนที่ไปทางขวา หาก current_left น้อยกว่า 10
             elif current_left <= 10:
-                # ep_chassis.drive_wheels(w1=0, w2=0, w3=0, w4=0)  
-                ep_chassis.drive_wheels(w1=-15, w2=15, w3=-15, w4=15)  
-                print(current_left)
-                print('->') 
+                ep_chassis.drive_wheels(w1=-15, w2=15, w3=-15, w4=15)   
 
             else:
+                # หยุดนิ่ง
                 ep_chassis.drive_wheels(w1=0, w2=0, w3=0, w4=0)  
-                print(current_right, current_left)
-                print('ok')
-                print('-'*10)
                 break  
         time.sleep(0.1)
 
-        
-        # ep_gimbal.moveto(pitch=0, yaw=90, pitch_speed=0, yaw_speed=200).wait_for_completed()
-        # time.sleep(0.35)
-
-        # if tof_data and tof_data[-1] >= 600:
-        #     print(tof_data[-1])
-        #     x = False
-        #     count1 +=1
-        #     print(count1)
-        #     rotate_right(ep_chassis)
-
+        # หมุนหุ่นยนต์ไปทางขวา หากทางขวาไปได้
         if current_right >= 49:
-                print('turn right ', current_right)
-                x = False
-                count1 +=1
-                print(count1)
+                status = False
+                count +=1
                 rotate_right(ep_chassis)
 
         else:
-            ep_gimbal.recenter(yaw_speed=200).wait_for_completed()
-            time.sleep(0.1)
+            # หัน gimbal ไปทางซ้าย
             ep_gimbal.moveto(pitch=0, yaw=-90, pitch_speed=0, yaw_speed=200).wait_for_completed()
             time.sleep(0.35)
+
+            # หมุนหุ่นยนต์ไปทางซ้าย หากทางซ้ายไปได้
             if tof_data and tof_data[-1] >= 600:
-                print(tof_data[-1])
-                x = False
-                count1 +=1
-                print(count1)
+                status = False
+                count +=1
                 rotate_left(ep_chassis)
             else:
-                # ep_gimbal.recenter(yaw_speed=200).wait_for_completed()
-                # time.sleep(0.1)
+                # หมุนหุ่นยนย์กลับหลัง เพราะเจอทางตัน
                 rotate_180_degrees(ep_chassis)
        
-
+        # รีเซ็ตตำแหน่ง gimbal
         ep_gimbal.recenter(yaw_speed=200).wait_for_completed()
         time.sleep(0.1)
+        
+        # ปรับมุม yaw ให้ตรง
         adjust_angle(yaw)
-        print('yaw = ', yaw)
-        time.sleep(0.1)
+        time.sleep(0.2)
 
+        # หยุดการทำงานหาก TOF มากกว่า 6000 และ current_left, current_right มากกว่า 49
         if tof_data and tof_data[-1] >= 6000 and current_left >= 49 and current_left >= 49: 
-            print(tof_data[-1], current_right, current_left)
             break
 
+    # ยกเลิกการสมัครสมาชิกเซ็นเซอร์และปิดการเชื่อมต่อหุ่นยนต์
     ep_chassis.unsub_position()
     ep_chassis.unsub_attitude()
     ep_sensor.unsub_distance()
     ep_sensor_adaptor.unsub_adapter()
     ep_robot.close()
-
-    # # Save data to CSV
-    # with open('chassis_data.csv', 'w', newline='') as csvfile:
-    #     fieldnames = ['timestamp', 'position_x', 'position_y', 'position_z', 'tof_distance', 'left_data', 'right_data']
-    #     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-    #     writer.writeheader()
-    #     for idx in range(max(len(tof_time_data), len(left_time_data), len(right_time_data))):
-    #         row = {'position_x': position_data[idx][0] if idx < len(position_data) else '',
-    #                'position_y': position_data[idx][1] if idx < len(position_data) else '',
-    #                'position_z': position_data[idx][2] if idx < len(position_data) else '',
-    #                'tof_distance': tof_data[idx] if idx < len(tof_data) else '',
-    #                'left_data': left_data[idx] if idx < len(left_data) else '',
-    #                'right_data': right_data[idx] if idx < len(right_data) else ''}
-    #         writer.writerow(row)
-
-    # # Plotting data
-    # plt.figure()
-
-
-    # plt.subplot(2, 2, 2)
-    # if tof_time_data:
-    #     time_series = [t - tof_time_data[0] for t in tof_time_data]
-    #     plt.plot(time_series, tof_data, label='Distance')
-    # plt.title("TOF Data")
-    # plt.legend()
-
-    # plt.subplot(2, 2, 3)
-    # if left_time_data:
-    #     time_series = [t - left_time_data[0] for t in left_time_data]
-    #     plt.plot(time_series, left_data, label='Left Sensor')
-    #     plt.plot(time_series, right_data, label='Right Sensor')
-    # plt.title("Left/Right Sensor Data")
-    # plt.legend()
-
-    # plt.tight_layout()
-    # plt.show()
-
-
-
