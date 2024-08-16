@@ -115,6 +115,7 @@ def move_forword(ep_chassis, threshold_distance, overall_start_time, time_data, 
         # หยุดหุ่นยนต์หาก TOF น้อยกว่าค่า threshold (เจอกำเเพงด้านหน้า)
         if tof_data and tof_data[-1] < threshold_distance:
             ep_chassis.drive_wheels(w1=0, w2=0, w3=0, w4=0)  
+            time.sleep(0.05)
             count = 0
             break
 
