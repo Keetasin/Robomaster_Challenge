@@ -31,6 +31,7 @@ def sub_attitude_info_handler(attitude_info):
 
 # Function Callback สำหรับจัดการข้อมูลจากเซ็นเซอร์ TOF
 def sub_tof_handler(tof_info):
+    time.sleep(0.1)
     tof_data.append(tof_info[0])
     # print(f'TOF: {tof_info[0]}')
 
@@ -133,6 +134,7 @@ def move_forword(ep_chassis, threshold_distance, overall_start_time, time_data, 
         # หยุดหุ่นยนต์หากค่า current_right มากกว่า 49 (ทางขวาไปได้)
         elif status and current_right >= 49:
             ep_chassis.drive_wheels(w1=0, w2=0, w3=0, w4=0) 
+            count = 0
             time.sleep(0.05)
             print('************************************')
             break
@@ -219,7 +221,7 @@ if __name__ == '__main__':
     ep_chassis.sub_attitude(freq=10, callback=sub_attitude_info_handler)
     ep_sensor.sub_distance(freq=10, callback=sub_tof_handler)
     ep_sensor_adaptor.sub_adapter(freq=10, callback=sub_data_handler)  
-    time.sleep(0.1)
+    time.sleep(0.5)
 
     time_data, list_current_x = [], []
     overall_start_time = time.time()
