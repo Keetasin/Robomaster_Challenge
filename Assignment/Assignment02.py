@@ -10,6 +10,7 @@ def sub_position_handler(position_info):
     current_x, y, z = position_info
     print("position: x:{0}, y:{1}, z:{2}".format(current_x, y, z))
 
+
 def chick_detect():
     max_chick_contour = max(contours_chick, key=cv2.contourArea)
     (x_chick, y_chick, w_chick, h_chick) = cv2.boundingRect(max_chick_contour)
@@ -26,24 +27,9 @@ def chick_detect():
     new_x_chick = x_chick - add_w_chick // 2
     new_w_chick = w_chick + add_w_chick
     new_h_chick = h_chick + add_h_chick
-    cv2.rectangle(
-        frame,
-        (new_x_chick, new_y_chick),
-        (new_x_chick + new_w_chick, new_y_chick + new_h_chick),
-        (255, 0, 255),
-        2,
-    )
 
-    text_chick = f" CHICK x: {x_chick}, y: {y_chick}, w: {w_chick}, h: {h_chick}"
-    cv2.putText(
-        frame,
-        text_chick,
-        (x_chick, y_chick - 10),
-        cv2.FONT_HERSHEY_SIMPLEX,
-        0.4,
-        (255, 255, 255),
-        1,
-    )
+    cv2.rectangle(frame, (new_x_chick, new_y_chick), (new_x_chick + new_w_chick, new_y_chick + new_h_chick), (255, 0, 255), 2)
+    cv2.putText(frame, f" CHICK x: {x_chick}, y: {y_chick}, w: {w_chick}, h: {h_chick}", (x_chick, y_chick - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1)
 
 
 
@@ -54,12 +40,12 @@ def bottle_detect():
     if w_bottle > 90:  
         add_w_bottle = int(w_bottle * 0.29)  
         add_h_bottle = int(h_bottle * 2.5)
-        new_y_bottle = y_bottle - add_h_bottle // 2 -6
+        new_y_bottle = y_bottle - add_h_bottle // 2 -20
 
     elif w_bottle > 35:  
         add_w_bottle = int(w_bottle * 0.3)  
         add_h_bottle = int(h_bottle * 2.8)
-        new_y_bottle = y_bottle - add_h_bottle // 2 -5
+        new_y_bottle = y_bottle - add_h_bottle // 2 -10
 
     else:
         add_w_bottle = int(w_bottle * 0.52)
@@ -70,26 +56,8 @@ def bottle_detect():
     new_w_bottle = w_bottle + add_w_bottle
     new_h_bottle = h_bottle + add_h_bottle
 
-    cv2.rectangle(
-        frame,
-        (new_x_bottle, new_y_bottle),
-        (new_x_bottle + new_w_bottle, new_y_bottle + new_h_bottle),
-        (0, 165, 255),
-        2,
-    )
-
-    text_bottle = (
-        f" BOTTLE x: {x_bottle}, y: {y_bottle}, w: {w_bottle}, h: {h_bottle}"
-    )
-    cv2.putText(
-        frame,
-        text_bottle,
-        (x_bottle, y_bottle-50),
-        cv2.FONT_HERSHEY_SIMPLEX,
-        0.4,
-        (255, 255, 255),
-        1,
-    )
+    cv2.rectangle(frame, (new_x_bottle, new_y_bottle), (new_x_bottle + new_w_bottle, new_y_bottle + new_h_bottle), (0, 165, 255), 2)
+    cv2.putText(frame, f" BOTTLE x: {x_bottle}, y: {y_bottle}, w: {w_bottle}, h: {h_bottle}", (x_bottle, y_bottle-50), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1)
 
 
 
@@ -106,9 +74,9 @@ if __name__ == "__main__":
 
     current_x = 0.0  
     target_distance = 1.8 
-    kp = 80   
-    ki = 5    
-    kd = 25   
+    kp = 70   
+    ki = 10    
+    kd = 30   
     tolerance = 0.01   
 
     ep_chassis.sub_position(freq=10, callback=sub_position_handler)
@@ -158,8 +126,9 @@ if __name__ == "__main__":
             mask_bottle.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
         )
 
-        if contours_chick or contours_bottle:
+        if contours_chick: 
             chick_detect()
+        if contours_bottle:
             bottle_detect()
 
             if target_distance - current_x > tolerance :
@@ -169,16 +138,16 @@ if __name__ == "__main__":
                 integral += error * time_diff
                 derivative = (error - prev_error) / time_diff if time_diff > 0 else 0.0
                 speed = kp * error + kd * derivative + ki * integral 
-                speed = max(min(speed, 30), 0)  
+                speed = max(min(speed, 20), 0)  
                 ep_chassis.drive_wheels(w1=speed, w2=speed, w3=speed, w4=speed)
                 prev_error = error
                 prev_time = current_time
-                time.sleep(0.1)  
+                time.sleep(0.005)  
 
             else:
                 ep_chassis.drive_wheels(w1=0, w2=0, w3=0, w4=0)
-                time.sleep(1)
-                continue
+                time.sleep(0.005)
+                
 
 
         cv2.imshow("Original Frame", frame)
