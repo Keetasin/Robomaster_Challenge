@@ -7,9 +7,9 @@ import numpy as np
 
 def sub_position_handler(position_info):
     global current_x
-    x, y, z = position_info
-    current_x = x
-    print("position: x:{0}, y:{1}, z:{2}".format(x, y, z))
+    current_x, y, z = position_info
+    print("position: x:{0}, y:{1}, z:{2}".format(current_x, y, z))
+
 
 def chick_detect():
     max_chick_contour = max(contours_chick, key=cv2.contourArea)
@@ -18,37 +18,19 @@ def chick_detect():
     if w_chick > 65:
         add_w_chick = int(w_chick * 0.3)
         add_h_chick = int(h_chick * 0.6)
-        # ปรับตำแหน่งของกรอบให้เลื่อนไปทางซ้ายและขึ้นข้างบน
-        new_x_chick = x_chick - add_w_chick // 2
         new_y_chick = y_chick - add_h_chick // 2 + 20
-        new_w_chick = w_chick + add_w_chick
-        new_h_chick = h_chick + add_h_chick
+
     else:
         add_w_chick = int(w_chick * 0.3)
         add_h_chick = int(h_chick * 0.5)
-        # ปรับตำแหน่งของกรอบให้เลื่อนไปทางซ้ายและขึ้นข้างบน
-        new_x_chick = x_chick - add_w_chick // 2
         new_y_chick = (y_chick - add_h_chick // 2 + 20) - 15
+    
+        new_x_chick = x_chick - add_w_chick // 2
         new_w_chick = w_chick + add_w_chick
         new_h_chick = h_chick + add_h_chick
-    cv2.rectangle(
-        frame,
-        (new_x_chick, new_y_chick),
-        (new_x_chick + new_w_chick, new_y_chick + new_h_chick),
-        (0, 0, 255),
-        2,
-    )
 
-    text_chick = f" CHICK x: {x_chick}, y: {y_chick}, w: {w_chick}, h: {h_chick}"
-    cv2.putText(
-        frame,
-        text_chick,
-        (x_chick, y_chick - 10),
-        cv2.FONT_HERSHEY_SIMPLEX,
-        0.6,
-        (255, 255, 255),
-        2,
-    )
+    cv2.rectangle(frame,(new_x_chick, new_y_chick),(new_x_chick + new_w_chick, new_y_chick + new_h_chick),(255, 0, 255),2,)
+    cv2.putText(frame,f" CHICK x: {x_chick}, y: {y_chick}, w: {w_chick}, h: {h_chick}",(x_chick, y_chick - 10),cv2.FONT_HERSHEY_SIMPLEX,0.4,(255, 255, 255),1)
 
 
 
@@ -56,36 +38,27 @@ def bottle_detect():
     max_bottle_contour = max(contours_bottle, key=cv2.contourArea)
     (x_bottle, y_bottle, w_bottle, h_bottle) = cv2.boundingRect(max_bottle_contour)
 
-    add_w_bottle = int(w_bottle * 1.3)
-    add_h_bottle = int(h_bottle * 4)
+    if w_bottle > 90:  
+        add_w_bottle = int(w_bottle * 0.29)  
+        add_h_bottle = int(h_bottle * 2.5)
+        new_y_bottle = y_bottle - add_h_bottle // 2 -6
+
+    elif w_bottle > 35:  
+        add_w_bottle = int(w_bottle * 0.3)  
+        add_h_bottle = int(h_bottle * 2.8)
+        new_y_bottle = y_bottle - add_h_bottle // 2 -5
+
+    else:
+        add_w_bottle = int(w_bottle * 0.52)
+        add_h_bottle = int(h_bottle * 3.6)
+        new_y_bottle = y_bottle - add_h_bottle // 2 -2
 
     new_x_bottle = x_bottle - add_w_bottle // 2
-    new_y_bottle = y_bottle - add_h_bottle // 2 - 5
     new_w_bottle = w_bottle + add_w_bottle
     new_h_bottle = h_bottle + add_h_bottle
 
-    cv2.rectangle(
-        frame,
-        (new_x_bottle, new_y_bottle),
-        (new_x_bottle + new_w_bottle, new_y_bottle + new_h_bottle),
-        (255, 0, 0),
-        2,
-    )
-
-    text_bottle = (
-        f" BOTTLE x: {x_bottle}, y: {y_bottle}, w: {w_bottle}, h: {h_bottle}"
-    )
-    cv2.putText(
-        frame,
-        text_bottle,
-        (x_bottle, y_bottle - 10),
-        cv2.FONT_HERSHEY_SIMPLEX,
-        0.6,
-        (255, 255, 255),
-        2,
-    )
-
-
+    cv2.rectangle(frame,(new_x_bottle, new_y_bottle),(new_x_bottle + new_w_bottle, new_y_bottle + new_h_bottle),(0, 165, 255),2)
+    cv2.putText(frame,"BOTTLE x: {x_bottle}, y: {y_bottle}, w: {w_bottle}, h: {h_bottle}",(x_bottle, y_bottle-50),cv2.FONT_HERSHEY_SIMPLEX,0.4,(255, 255, 255),1)
 
 
 if __name__ == "__main__":
@@ -145,12 +118,8 @@ if __name__ == "__main__":
         result_chick = cv2.bitwise_and(frame, frame, mask=mask_chick)
         result_bottle = cv2.bitwise_and(frame, frame, mask=mask_bottle)
 
-        contours_chick, _ = cv2.findContours(
-            mask_chick.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
-        )
-        contours_bottle, _ = cv2.findContours(
-            mask_bottle.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
-        )
+        contours_chick, _ = cv2.findContours(mask_chick.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        contours_bottle, _ = cv2.findContours(mask_bottle.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
         if contours_chick or contours_bottle:
             chick_detect()
