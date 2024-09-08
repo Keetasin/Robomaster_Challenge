@@ -37,20 +37,25 @@ def bottle_detect():
     max_bottle_contour = max(contours_bottle, key=cv2.contourArea)
     (x_bottle, y_bottle, w_bottle, h_bottle) = cv2.boundingRect(max_bottle_contour)
 
-    if w_bottle > 90:  
-        add_w_bottle = int(w_bottle * 0.29)  
+    if w_bottle > 85:   
+        add_w_bottle = int(w_bottle * 0.27)  
         add_h_bottle = int(h_bottle * 2.5)
-        new_y_bottle = y_bottle - add_h_bottle // 2 -20
-
-    elif w_bottle > 35:  
-        add_w_bottle = int(w_bottle * 0.3)  
-        add_h_bottle = int(h_bottle * 2.8)
         new_y_bottle = y_bottle - add_h_bottle // 2 -10
 
+    elif w_bottle > 50:  
+        add_w_bottle = int(w_bottle * 0.27)  
+        add_h_bottle = int(h_bottle * 2.9)
+        new_y_bottle = y_bottle - add_h_bottle // 2 -11    
+
+    elif w_bottle > 35:  
+        add_w_bottle = int(w_bottle * 0.28)  
+        add_h_bottle = int(h_bottle * 3.4)
+        new_y_bottle = y_bottle - add_h_bottle // 2 -8
+
     else:
-        add_w_bottle = int(w_bottle * 0.52)
-        add_h_bottle = int(h_bottle * 3.6)
-        new_y_bottle = y_bottle - add_h_bottle // 2 -2
+        add_w_bottle = int(w_bottle * 0.47)
+        add_h_bottle = int(h_bottle * 3.4)
+        new_y_bottle = y_bottle - add_h_bottle // 2 -4
 
     new_x_bottle = x_bottle - add_w_bottle // 2
     new_w_bottle = w_bottle + add_w_bottle
@@ -58,8 +63,6 @@ def bottle_detect():
 
     cv2.rectangle(frame, (new_x_bottle, new_y_bottle), (new_x_bottle + new_w_bottle, new_y_bottle + new_h_bottle), (0, 165, 255), 2)
     cv2.putText(frame, f" BOTTLE x: {x_bottle}, y: {y_bottle}, w: {w_bottle}, h: {h_bottle}", (x_bottle, y_bottle-50), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1)
-
-
 
 
 if __name__ == "__main__":
@@ -74,7 +77,7 @@ if __name__ == "__main__":
 
     current_x = 0.0  
     target_distance = 1.8 
-    kp = 70   
+    kp = 75   
     ki = 10    
     kd = 30   
     tolerance = 0.01   
@@ -131,22 +134,22 @@ if __name__ == "__main__":
         if contours_bottle:
             bottle_detect()
 
-            if target_distance - current_x > tolerance :
-                current_time = time.time()
-                error = target_distance - current_x
-                time_diff = current_time - prev_time
-                integral += error * time_diff
-                derivative = (error - prev_error) / time_diff if time_diff > 0 else 0.0
-                speed = kp * error + kd * derivative + ki * integral 
-                speed = max(min(speed, 20), 0)  
-                ep_chassis.drive_wheels(w1=speed, w2=speed, w3=speed, w4=speed)
-                prev_error = error
-                prev_time = current_time
-                time.sleep(0.005)  
+        if target_distance - current_x > tolerance :
+            current_time = time.time()
+            error = target_distance - current_x
+            time_diff = current_time - prev_time
+            integral += error * time_diff
+            derivative = (error - prev_error) / time_diff if time_diff > 0 else 0.0
+            speed = kp * error + kd * derivative + ki * integral 
+            speed = max(min(speed, 20), 0)  
+            ep_chassis.drive_wheels(w1=speed, w2=speed, w3=speed, w4=speed)
+            prev_error = error
+            prev_time = current_time
+            time.sleep(0.005)  
 
-            else:
-                ep_chassis.drive_wheels(w1=0, w2=0, w3=0, w4=0)
-                time.sleep(0.005)
+        else:
+            ep_chassis.drive_wheels(w1=0, w2=0, w3=0, w4=0)
+            time.sleep(0.005)
                 
 
 
