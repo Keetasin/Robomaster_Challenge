@@ -12,83 +12,79 @@ def sub_position_handler(position_info):
     print("position: x:{0}, y:{1}, z:{2}".format(x, y, z))
 
 def chick_detect():
-    if contours_chick:
-        max_chick_contour = max(contours_chick, key=cv2.contourArea)
-        (x_chick, y_chick, w_chick, h_chick) = cv2.boundingRect(max_chick_contour)
+    max_chick_contour = max(contours_chick, key=cv2.contourArea)
+    (x_chick, y_chick, w_chick, h_chick) = cv2.boundingRect(max_chick_contour)
 
-        if w_chick > 65:
-            add_w_chick = int(w_chick * 0.3)
-            add_h_chick = int(h_chick * 0.6)
-            # ปรับตำแหน่งของกรอบให้เลื่อนไปทางซ้ายและขึ้นข้างบน
-            new_x_chick = x_chick - add_w_chick // 2
-            new_y_chick = y_chick - add_h_chick // 2 + 20
-            new_w_chick = w_chick + add_w_chick
-            new_h_chick = h_chick + add_h_chick
-        else:
-            add_w_chick = int(w_chick * 0.3)
-            add_h_chick = int(h_chick * 0.5)
-            # ปรับตำแหน่งของกรอบให้เลื่อนไปทางซ้ายและขึ้นข้างบน
-            new_x_chick = x_chick - add_w_chick // 2
-            new_y_chick = (y_chick - add_h_chick // 2 + 20) - 15
-            new_w_chick = w_chick + add_w_chick
-            new_h_chick = h_chick + add_h_chick
-        cv2.rectangle(
-            frame,
-            (new_x_chick, new_y_chick),
-            (new_x_chick + new_w_chick, new_y_chick + new_h_chick),
-            (0, 0, 255),
-            2,
-        )
-
-        text_chick = f" CHICK x: {x_chick}, y: {y_chick}, w: {w_chick}, h: {h_chick}"
-        cv2.putText(
-            frame,
-            text_chick,
-            (x_chick, y_chick - 10),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            0.6,
-            (255, 255, 255),
-            2,
-        )
+    if w_chick > 65:
+        add_w_chick = int(w_chick * 0.3)
+        add_h_chick = int(h_chick * 0.6)
+        # ปรับตำแหน่งของกรอบให้เลื่อนไปทางซ้ายและขึ้นข้างบน
+        new_x_chick = x_chick - add_w_chick // 2
+        new_y_chick = y_chick - add_h_chick // 2 + 20
+        new_w_chick = w_chick + add_w_chick
+        new_h_chick = h_chick + add_h_chick
     else:
-        pass
+        add_w_chick = int(w_chick * 0.3)
+        add_h_chick = int(h_chick * 0.5)
+        # ปรับตำแหน่งของกรอบให้เลื่อนไปทางซ้ายและขึ้นข้างบน
+        new_x_chick = x_chick - add_w_chick // 2
+        new_y_chick = (y_chick - add_h_chick // 2 + 20) - 15
+        new_w_chick = w_chick + add_w_chick
+        new_h_chick = h_chick + add_h_chick
+    cv2.rectangle(
+        frame,
+        (new_x_chick, new_y_chick),
+        (new_x_chick + new_w_chick, new_y_chick + new_h_chick),
+        (0, 0, 255),
+        2,
+    )
+
+    text_chick = f" CHICK x: {x_chick}, y: {y_chick}, w: {w_chick}, h: {h_chick}"
+    cv2.putText(
+        frame,
+        text_chick,
+        (x_chick, y_chick - 10),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        0.6,
+        (255, 255, 255),
+        2,
+    )
+
 
 
 def bottle_detect():
-    if contours_bottle:
-        max_bottle_contour = max(contours_bottle, key=cv2.contourArea)
-        (x_bottle, y_bottle, w_bottle, h_bottle) = cv2.boundingRect(max_bottle_contour)
+    max_bottle_contour = max(contours_bottle, key=cv2.contourArea)
+    (x_bottle, y_bottle, w_bottle, h_bottle) = cv2.boundingRect(max_bottle_contour)
 
-        add_w_bottle = int(w_bottle * 1.3)
-        add_h_bottle = int(h_bottle * 4)
+    add_w_bottle = int(w_bottle * 1.3)
+    add_h_bottle = int(h_bottle * 4)
 
-        new_x_bottle = x_bottle - add_w_bottle // 2
-        new_y_bottle = y_bottle - add_h_bottle // 2 - 5
-        new_w_bottle = w_bottle + add_w_bottle
-        new_h_bottle = h_bottle + add_h_bottle
+    new_x_bottle = x_bottle - add_w_bottle // 2
+    new_y_bottle = y_bottle - add_h_bottle // 2 - 5
+    new_w_bottle = w_bottle + add_w_bottle
+    new_h_bottle = h_bottle + add_h_bottle
 
-        cv2.rectangle(
-            frame,
-            (new_x_bottle, new_y_bottle),
-            (new_x_bottle + new_w_bottle, new_y_bottle + new_h_bottle),
-            (255, 0, 0),
-            2,
-        )
+    cv2.rectangle(
+        frame,
+        (new_x_bottle, new_y_bottle),
+        (new_x_bottle + new_w_bottle, new_y_bottle + new_h_bottle),
+        (255, 0, 0),
+        2,
+    )
 
-        text_bottle = (
-            f" BOTTLE x: {x_bottle}, y: {y_bottle}, w: {w_bottle}, h: {h_bottle}"
-        )
-        cv2.putText(
-            frame,
-            text_bottle,
-            (x_bottle, y_bottle - 10),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            0.6,
-            (255, 255, 255),
-            2,
-        )
-    else:
-        pass
+    text_bottle = (
+        f" BOTTLE x: {x_bottle}, y: {y_bottle}, w: {w_bottle}, h: {h_bottle}"
+    )
+    cv2.putText(
+        frame,
+        text_bottle,
+        (x_bottle, y_bottle - 10),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        0.6,
+        (255, 255, 255),
+        2,
+    )
+
 
 
 
@@ -159,6 +155,7 @@ if __name__ == "__main__":
         if contours_chick or contours_bottle:
             chick_detect()
             bottle_detect()
+
             if target_distance - current_x > tolerance :
                 current_time = time.time()
                 error = target_distance - current_x
