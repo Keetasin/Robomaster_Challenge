@@ -14,14 +14,28 @@ def sub_position_handler(position_info):
 def chick_detect():
     max_chick_contour = max(contours_chick, key=cv2.contourArea)
     (x_chick, y_chick, w_chick, h_chick) = cv2.boundingRect(max_chick_contour)
+    
+    # if w_chick > 65:
+    #     add_w_chick = int(w_chick * 0.3)
+    #     add_h_chick = int(h_chick * 0.6)
+    #     new_y_chick = y_chick - add_h_chick // 2 + 20
+    # else:
+    #     add_w_chick = int(w_chick * 0.3)
+    #     add_h_chick = int(h_chick * 0.5)
+    #     new_y_chick = (y_chick - add_h_chick // 2 + 20) - 15
 
     if w_chick > 65:
         add_w_chick = int(w_chick * 0.3)
         add_h_chick = int(h_chick * 0.6)
         new_y_chick = y_chick - add_h_chick // 2 + 20
+    elif w_chick > 25:
+        add_w_chick = int(w_chick * 0.35)
+        add_h_chick = int(h_chick * 0.55)
+        new_y_chick = (y_chick - add_h_chick // 2 + 20) - 15
+
     else:
-        add_w_chick = int(w_chick * 0.3)
-        add_h_chick = int(h_chick * 0.5)
+        add_w_chick = int(w_chick * 0.39)
+        add_h_chick = int(h_chick * 0.59)
         new_y_chick = (y_chick - add_h_chick // 2 + 20) - 15
 
     new_x_chick = x_chick - add_w_chick // 2
@@ -31,16 +45,18 @@ def chick_detect():
     cv2.rectangle(frame, (new_x_chick, new_y_chick), (new_x_chick + new_w_chick, new_y_chick + new_h_chick), (255, 0, 255), 2)
     cv2.putText(frame, f" CHICK x: {x_chick}, y: {y_chick}, w: {w_chick}, h: {h_chick}", (x_chick, y_chick - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1)
 
-
+    print(">>>", w_chick, h_chick)
 
 def bottle_detect():
+
     max_bottle_contour = max(contours_bottle, key=cv2.contourArea)
     (x_bottle, y_bottle, w_bottle, h_bottle) = cv2.boundingRect(max_bottle_contour)
 
+    # crystal
     if w_bottle > 85:   
         add_w_bottle = int(w_bottle * 0.27)  
-        add_h_bottle = int(h_bottle * 2.5)
-        new_y_bottle = y_bottle - add_h_bottle // 2 -10
+        add_h_bottle = int(h_bottle * 2.7)
+        new_y_bottle = y_bottle - add_h_bottle // 2 -13
 
     elif w_bottle > 50:  
         add_w_bottle = int(w_bottle * 0.27)  
@@ -49,13 +65,34 @@ def bottle_detect():
 
     elif w_bottle > 35:  
         add_w_bottle = int(w_bottle * 0.28)  
-        add_h_bottle = int(h_bottle * 3.4)
-        new_y_bottle = y_bottle - add_h_bottle // 2 -8
+        add_h_bottle = int(h_bottle * 3.3)
+        new_y_bottle = y_bottle - add_h_bottle // 2 -4
 
     else:
         add_w_bottle = int(w_bottle * 0.47)
         add_h_bottle = int(h_bottle * 3.4)
         new_y_bottle = y_bottle - add_h_bottle // 2 -4
+
+    # #nestle
+    # if w_bottle > 85:   
+    #     add_w_bottle = int(w_bottle * 0.27)  
+    #     add_h_bottle = int(h_bottle * 4)
+    #     new_y_bottle = y_bottle - add_h_bottle // 2 + 34
+
+    # elif w_bottle > 50:  
+    #     add_w_bottle = int(w_bottle * 0.27)  
+    #     add_h_bottle = int(h_bottle * 4.2)
+    #     new_y_bottle = y_bottle - add_h_bottle // 2 +24
+
+    # elif w_bottle > 35:  
+    #     add_w_bottle = int(w_bottle * 0.28)  
+    #     add_h_bottle = int(h_bottle * 4.5)
+    #     new_y_bottle = y_bottle - add_h_bottle // 2 +12
+
+    # else:
+    #     add_w_bottle = int(w_bottle * 0.5)
+    #     add_h_bottle = int(h_bottle * 4.7)
+    #     new_y_bottle = y_bottle - add_h_bottle // 2 +9
 
     new_x_bottle = x_bottle - add_w_bottle // 2
     new_w_bottle = w_bottle + add_w_bottle
@@ -76,7 +113,7 @@ if __name__ == "__main__":
     center_y = 720 / 2
 
     current_x = 0.0  
-    target_distance = 1.8 
+    target_distance = 1.3
     kp = 75   
     ki = 10    
     kd = 30   
@@ -105,13 +142,16 @@ if __name__ == "__main__":
         diff_frame = cv2.absdiff(background, gray_frame)
 
         _, thresh_frame = cv2.threshold(diff_frame, 25, 255, cv2.THRESH_BINARY)
-
         thresh_frame = cv2.dilate(thresh_frame, None, iterations=2)
+
 
         hsv_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
         lower_chick = np.array([33, 150, 100])
-        upper_chick = np.array([36, 255, 255])
+        upper_chick = np.array([38, 255, 255])
+
+        # lower_chick = np.array([28, 150, 100])
+        # upper_chick = np.array([32, 255, 255])
 
         lower_bottle = np.array([95, 80, 100])
         upper_bottle = np.array([120, 255, 255])
