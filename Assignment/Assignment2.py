@@ -83,17 +83,13 @@ if __name__ == "__main__":
     target_distance = 1.3
     kp, ki, kd = 75, 10, 30   
     tolerance = 0.01   
+    prev_error, integral = 0.0, 0.0
+    prev_time = time.time()
 
     ep_chassis.sub_position(freq=10, callback=sub_position_handler)
     ep_camera.start_video_stream(display=False, resolution=camera.STREAM_720P)
     ep_gimbal.recenter(pitch_speed=200, yaw_speed=200).wait_for_completed()
     ep_gimbal.moveto(pitch=-10, yaw=0).wait_for_completed()
-
-    overall_start_time = time.time()
-    prev_error = 0.0
-    integral = 0.0
-    prev_time = overall_start_time
-
 
     while True:
         frame = ep_camera.read_cv2_image(strategy="newest", timeout=0.5)
@@ -109,8 +105,8 @@ if __name__ == "__main__":
         mask_chicken = cv2.inRange(hsv_frame, lower_chicken, upper_chicken)
         mask_bottle = cv2.inRange(hsv_frame, lower_bottle, upper_bottle)
 
-        contours_chicken, _ = cv2.findContours(mask_chicken.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        contours_bottle, _ = cv2.findContours(mask_bottle.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        contours_chicken, _ = cv2.findContours(mask_chicken, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        contours_bottle, _ = cv2.findContours(mask_bottle, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
         if contours_chicken: detect_chicken()
         if contours_bottle: detect_bottle()
@@ -126,14 +122,14 @@ if __name__ == "__main__":
             ep_chassis.drive_wheels(w1=speed, w2=speed, w3=speed, w4=speed)
             prev_error = error
             prev_time = current_time
-            time.sleep(0.005)  
+            time.sleep(0.05)  
 
         else:
             ep_chassis.drive_wheels(w1=0, w2=0, w3=0, w4=0)
-            time.sleep(0.005)
+            time.sleep(0.05)
                 
-        cv2.imshow("Original Frame", frame)
-        if cv2.waitKey(1) & 0xFF == ord("q"):break
+        cv2.imshow("Frame", frame)
+        if cv2.waitKey(1) & 0xFF == ord("q"): break
 
         time.sleep(0.1)
 
