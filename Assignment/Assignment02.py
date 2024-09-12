@@ -8,51 +8,39 @@ import numpy as np
 def sub_position_handler(position_info):
     global current_x
     current_x, y, z = position_info
-    print("position: x:{0}, y:{1}, z:{2}".format(current_x, y, z))
 
 
-def chick_detect():
-    max_chick_contour = max(contours_chick, key=cv2.contourArea)
-    (x_chick, y_chick, w_chick, h_chick) = cv2.boundingRect(max_chick_contour)
+def detect_chicken():
+    max_chicken_contour = max(contours_chicken, key=cv2.contourArea)
+    (x_chicken, y_chicken, w_chicken, h_chicken) = cv2.boundingRect(max_chicken_contour)
     
-    # if w_chick > 65:
-    #     add_w_chick = int(w_chick * 0.3)
-    #     add_h_chick = int(h_chick * 0.6)
-    #     new_y_chick = y_chick - add_h_chick // 2 + 20
-    # else:
-    #     add_w_chick = int(w_chick * 0.3)
-    #     add_h_chick = int(h_chick * 0.5)
-    #     new_y_chick = (y_chick - add_h_chick // 2 + 20) - 15
+    if w_chicken > 65:
+        add_w_chicken = int(w_chicken * 0.3)
+        add_h_chicken = int(h_chicken * 0.6)
+        new_y_chicken = y_chicken - add_h_chicken // 2 + 20
 
-    if w_chick > 65:
-        add_w_chick = int(w_chick * 0.3)
-        add_h_chick = int(h_chick * 0.6)
-        new_y_chick = y_chick - add_h_chick // 2 + 20
-    elif w_chick > 25:
-        add_w_chick = int(w_chick * 0.35)
-        add_h_chick = int(h_chick * 0.55)
-        new_y_chick = (y_chick - add_h_chick // 2 + 20) - 15
+    elif w_chicken > 25:
+        add_w_chicken = int(w_chicken * 0.35)
+        add_h_chicken = int(h_chicken * 0.55)
+        new_y_chicken = (y_chicken - add_h_chicken // 2 + 20) - 15
 
     else:
-        add_w_chick = int(w_chick * 0.39)
-        add_h_chick = int(h_chick * 0.59)
-        new_y_chick = (y_chick - add_h_chick // 2 + 20) - 15
+        add_w_chicken = int(w_chicken * 0.39)
+        add_h_chicken = int(h_chicken * 0.59)
+        new_y_chicken = (y_chicken - add_h_chicken // 2 + 20) - 15
 
-    new_x_chick = x_chick - add_w_chick // 2
-    new_w_chick = w_chick + add_w_chick
-    new_h_chick = h_chick + add_h_chick
+    new_x_chicken = x_chicken - add_w_chicken // 2
+    new_w_chicken = w_chicken + add_w_chicken
+    new_h_chicken = h_chicken + add_h_chicken
 
-    cv2.rectangle(frame, (new_x_chick, new_y_chick), (new_x_chick + new_w_chick, new_y_chick + new_h_chick), (255, 0, 255), 2)
-    cv2.putText(frame, f" CHICK x: {x_chick}, y: {y_chick}, w: {w_chick}, h: {h_chick}", (x_chick, y_chick - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1)
+    cv2.rectangle(frame, (new_x_chicken, new_y_chicken), (new_x_chicken + new_w_chicken, new_y_chicken + new_h_chicken), (255, 0, 255), 2)
+    cv2.putText(frame, f" chicken x: {x_chicken}, y: {y_chicken}, w: {w_chicken}, h: {h_chicken}", (x_chicken, y_chicken - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1)
 
-    print(">>>", w_chick, h_chick)
 
-def bottle_detect():
-
+def detect_bottle():
     max_bottle_contour = max(contours_bottle, key=cv2.contourArea)
     (x_bottle, y_bottle, w_bottle, h_bottle) = cv2.boundingRect(max_bottle_contour)
 
-    # crystal
     if w_bottle > 85:   
         add_w_bottle = int(w_bottle * 0.27)  
         add_h_bottle = int(h_bottle * 2.7)
@@ -72,27 +60,6 @@ def bottle_detect():
         add_w_bottle = int(w_bottle * 0.47)
         add_h_bottle = int(h_bottle * 3.4)
         new_y_bottle = y_bottle - add_h_bottle // 2 -4
-
-    # #nestle
-    # if w_bottle > 85:   
-    #     add_w_bottle = int(w_bottle * 0.27)  
-    #     add_h_bottle = int(h_bottle * 4)
-    #     new_y_bottle = y_bottle - add_h_bottle // 2 + 34
-
-    # elif w_bottle > 50:  
-    #     add_w_bottle = int(w_bottle * 0.27)  
-    #     add_h_bottle = int(h_bottle * 4.2)
-    #     new_y_bottle = y_bottle - add_h_bottle // 2 +24
-
-    # elif w_bottle > 35:  
-    #     add_w_bottle = int(w_bottle * 0.28)  
-    #     add_h_bottle = int(h_bottle * 4.5)
-    #     new_y_bottle = y_bottle - add_h_bottle // 2 +12
-
-    # else:
-    #     add_w_bottle = int(w_bottle * 0.5)
-    #     add_h_bottle = int(h_bottle * 4.7)
-    #     new_y_bottle = y_bottle - add_h_bottle // 2 +9
 
     new_x_bottle = x_bottle - add_w_bottle // 2
     new_w_bottle = w_bottle + add_w_bottle
@@ -114,9 +81,7 @@ if __name__ == "__main__":
 
     current_x = 0.0  
     target_distance = 1.3
-    kp = 75   
-    ki = 10    
-    kd = 30   
+    kp, ki, kd = 75, 10, 30   
     tolerance = 0.01   
 
     ep_chassis.sub_position(freq=10, callback=sub_position_handler)
@@ -129,50 +94,26 @@ if __name__ == "__main__":
     integral = 0.0
     prev_time = overall_start_time
 
-    background = ep_camera.read_cv2_image(strategy="newest", timeout=0.5)
-    background = cv2.cvtColor(background, cv2.COLOR_BGR2GRAY)
-    background = cv2.GaussianBlur(background, (21, 21), 0)
 
     while True:
         frame = ep_camera.read_cv2_image(strategy="newest", timeout=0.5)
 
-        gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        gray_frame = cv2.GaussianBlur(gray_frame, (21, 21), 0)
-
-        diff_frame = cv2.absdiff(background, gray_frame)
-
-        _, thresh_frame = cv2.threshold(diff_frame, 25, 255, cv2.THRESH_BINARY)
-        thresh_frame = cv2.dilate(thresh_frame, None, iterations=2)
-
-
         hsv_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
-        lower_chick = np.array([33, 150, 100])
-        upper_chick = np.array([38, 255, 255])
-
-        # lower_chick = np.array([28, 150, 100])
-        # upper_chick = np.array([32, 255, 255])
+        lower_chicken = np.array([33, 150, 100])
+        upper_chicken = np.array([38, 255, 255])
 
         lower_bottle = np.array([95, 80, 100])
         upper_bottle = np.array([120, 255, 255])
 
-        mask_chick = cv2.inRange(hsv_frame, lower_chick, upper_chick)
+        mask_chicken = cv2.inRange(hsv_frame, lower_chicken, upper_chicken)
         mask_bottle = cv2.inRange(hsv_frame, lower_bottle, upper_bottle)
 
-        result_chick = cv2.bitwise_and(frame, frame, mask=mask_chick)
-        result_bottle = cv2.bitwise_and(frame, frame, mask=mask_bottle)
+        contours_chicken, _ = cv2.findContours(mask_chicken.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        contours_bottle, _ = cv2.findContours(mask_bottle.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-        contours_chick, _ = cv2.findContours(
-            mask_chick.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
-        )
-        contours_bottle, _ = cv2.findContours(
-            mask_bottle.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
-        )
-
-        if contours_chick: 
-            chick_detect()
-        if contours_bottle:
-            bottle_detect()
+        if contours_chicken: detect_chicken()
+        if contours_bottle: detect_bottle()
 
         if target_distance - current_x > tolerance :
             current_time = time.time()
@@ -191,11 +132,8 @@ if __name__ == "__main__":
             ep_chassis.drive_wheels(w1=0, w2=0, w3=0, w4=0)
             time.sleep(0.005)
                 
-
-
         cv2.imshow("Original Frame", frame)
-        if cv2.waitKey(1) & 0xFF == ord("q"):
-            break
+        if cv2.waitKey(1) & 0xFF == ord("q"):break
 
         time.sleep(0.1)
 
