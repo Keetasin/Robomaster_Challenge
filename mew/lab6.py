@@ -5,69 +5,48 @@ from robomaster import robot, camera
 import matplotlib.pyplot as plt
 
 def capture_image(ep_camera, distance):
-    # Start video stream
     ep_camera.start_video_stream(display=False, resolution=camera.STREAM_720P)
-    
-    # Wait for the image to stabilize
-    time.sleep(0.5)
-    
-    # Get the latest image
+    time.sleep(2)
     img = ep_camera.read_cv2_image(strategy="newest")[250:600,300:980]
-    
-    # Save the image
-    cv2.imwrite(f"coke_can_{distance}cm.png", img)
-    
-    # Stop video stream
     ep_camera.stop_video_stream()
-    
+
     return img
 
 def measure_dimensions(img):
-    # Convert the image to HSV
     hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
     
-    # Define the red color ranges in HSV
     lower_red1 = np.array([0, 70, 50])
     upper_red1 = np.array([10, 255, 255])
     lower_red2 = np.array([170, 70, 50])
     upper_red2 = np.array([180, 255, 255])
     
-    # Create masks for the red color ranges
     mask1 = cv2.inRange(hsv, lower_red1, upper_red1)
     mask2 = cv2.inRange(hsv, lower_red2, upper_red2)
     
-    # Combine the masks
     combined_mask = cv2.bitwise_or(mask1, mask2)
-    
-    # Find contours on the combined mask
     contours, _ = cv2.findContours(combined_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     
-    # Find the largest contour
     if contours:
         largest_contour = max(contours, key=cv2.contourArea)
         x, y, w, h = cv2.boundingRect(largest_contour)
         
-        # Draw rectangle around the largest contour
         cv2.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 2)
-
         cv2.putText(img, f"Coke can x: {x}, y: {y}, w: {w}, h: {h}", (x, y - 10), 
         cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
-        
-        # Show the image with detection (optional)
+
+        cv2.imwrite(f"coke_can_{distance}cm.png", img)
         cv2.imshow("Detected Coke Can", img)
         cv2.waitKey(0)
         cv2.destroyAllWindows()
         
-        # Return the dimensions in pixels
-        return w, h  # width, height in pixels
+        return w, h 
 
     print("No contours found.")
     return 0, 0
 
 if __name__ == '__main__':
-    # Start the robot
     ep_robot = robot.Robot()
-    ep_robot.initialize(conn_type="ap")
+    ep_robot.initialize(conn_type="rndis")
     ep_camera = ep_robot.camera
     ep_gimbal = ep_robot.gimbal
 
@@ -78,7 +57,7 @@ if __name__ == '__main__':
     
     # Store data
     pixel_dimensions = []
-    physical_dimensions = (5.45, 14.6)  # Dimensions of Coca-Cola can (Width, Height) in cm
+    physical_dimensions = (5.5, 14.4)  # Dimensions of Coca-Cola can (Width, Height) in cm
 
     for distance in distances:
         img = capture_image(ep_camera, distance)
