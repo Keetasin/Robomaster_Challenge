@@ -83,8 +83,8 @@ def sub_data_handler(sub_info):
     right_data.append(sharp_right)
     
     # ปรับค่า sharp_left และ sharp_right ตามเกณฑ์ที่กำหนด
-    if sharp_left >= 13:
-        sharp_left += 2
+    # if sharp_left >= 13:
+    #     sharp_left += 2
     
     if sharp_left >= 20:
         sharp_left = 50
@@ -99,8 +99,8 @@ def sub_data_handler(sub_info):
 
     ir_left = io_data[1]
     ir_right = io_data[2]
-    # print(f'ir_left: {ir_left}, ir_right: {ir_right}')
-    # print(f"PORT1 left: {sharp_left}, PORT2 right: {sharp_right}")
+    print(f'ir_left: {ir_left}, ir_right: {ir_right}')
+    print(f"PORT1 left: {sharp_left}, PORT2 right: {sharp_right}")
     return distances
 
 # Function เคลื่อนที่ไปข้างหน้าจนกว่าจะเจอกำเเพงด้านหน้า หรือเจอทางทางขวาที่ไปได้
@@ -127,7 +127,7 @@ def move_forword(ep_chassis, threshold_distance, overall_start_time, time_data, 
             ep_chassis.drive_wheels(w1=0, w2=0, w3=0, w4=0)  
             time.sleep(0.05)
             count = 0
-            print(tof_data[-1],ir_left,ir_right)
+            # print(tof_data[-1],ir_left,ir_right)
             print('----------------------------------')
             break
 
@@ -140,17 +140,17 @@ def move_forword(ep_chassis, threshold_distance, overall_start_time, time_data, 
             break
 
         # current_right หรือ current_left ต่ำกว่า 10 ให้ขยับรถเข้ากลาง เพื่อไม่ให้ชนกำเเพง
-        elif current_right <= 10 or ir_right == 0 :
+        elif current_right <= 10 :#or (ir_right == 0 and ir_left == 1) :
             ep_chassis.drive_wheels(w1=18, w2=-18, w3=18, w4=-18)  
             print('<')
-
-        elif current_left <= 10 or ir_left == 0:
+        elif current_left <= 10 :#or (ir_left == 0 and ir_right == 1):
             ep_chassis.drive_wheels(w1=-18, w2=18, w3=-18, w4=18)  
             print('>')
 
+
         # เคลื่อนที่ไปด้านหน้า
         else:
-            ep_chassis.drive_wheels(w1=40, w2=40, w3=40, w4=40) 
+            ep_chassis.drive_wheels(w1=50, w2=50, w3=50, w4=50) 
 
         # ปรับค่า count และ status
         if count == 25:
@@ -159,8 +159,8 @@ def move_forword(ep_chassis, threshold_distance, overall_start_time, time_data, 
 
         if count >= 1:
             count += 1
-        print(count)
-        print(status)
+        # print(count)
+        # print(status)
 
         list_current_x.append((current_x, current_y))
         time_data.append(time.time() - overall_start_time)
@@ -254,17 +254,17 @@ if __name__ == '__main__':
                 print('forword')
             
             # เคลื่อนที่ไปทางซ้าย หาก current_right น้อยกว่า 10
-            elif current_right <= 10 or ir_right == 0:
-                ep_chassis.drive_wheels(w1=18, w2=-18, w3=18, w4=-18) 
-                print(current_right,ir_right)
-                print('<<')
 
             # เคลื่อนที่ไปทางขวา หาก current_left น้อยกว่า 10
-            elif current_left <= 10 or ir_left == 0:
+            elif current_left <= 10 :#or (ir_left == 0 and ir_right == 1):
                 ep_chassis.drive_wheels(w1=-18, w2=18, w3=-18, w4=18)                   
-                print(current_left,ir_left)
+                # print(current_left,ir_left)
                 print('>>')
 
+            elif current_right <= 10 :#or (ir_right == 0 and ir_left == 1):
+                ep_chassis.drive_wheels(w1=18, w2=-18, w3=18, w4=-18) 
+                # print(current_right,ir_right)
+                print('<<')
             else:
                 # หยุดนิ่ง
                 ep_chassis.drive_wheels(w1=0, w2=0, w3=0, w4=0)  
@@ -275,8 +275,8 @@ if __name__ == '__main__':
         if current_right >= 49:
                 status = False
                 count +=1
-                print(current_right)
-                print('turn_right',status)
+                # print(current_right)
+                # print('turn_right',status)
                 rotate_right(ep_chassis)
 
         else:
@@ -284,14 +284,14 @@ if __name__ == '__main__':
             if current_left >= 49:
                 status = False
                 count +=1
-                print(current_right,current_left)
-                print('turn_left',status)
+                # print(current_right,current_left)
+                # print('turn_left',status)
                 rotate_left(ep_chassis)
             else:
                 # หมุนหุ่นยนย์กลับหลัง เพราะเจอทางตัน
                 count += 1
-                print(current_right,current_left)
-                print('turn_back')
+                # print(current_right,current_left)
+                # print('turn_back')
                 rotate_180_degrees(ep_chassis)
                 
        
