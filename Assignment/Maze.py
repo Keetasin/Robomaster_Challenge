@@ -150,7 +150,8 @@ def move_forword(ep_chassis, threshold_distance, overall_start_time, time_data, 
 
         # เคลื่อนที่ไปด้านหน้า
         else:
-            ep_chassis.drive_wheels(w1=50, w2=50, w3=50, w4=50) 
+            ep_chassis.drive_wheels(w1=speed, w2=speed, w3=speed, w4=speed)
+            print('speed =', speed) 
 
         # ปรับค่า count และ status
         if count == 25:
@@ -216,6 +217,11 @@ if __name__ == '__main__':
     ep_sensor_adaptor = ep_robot.sensor_adaptor
     ep_gimbal = ep_robot.gimbal
 
+    kp, ki, kd = 0.5, 0.002, 0.15   
+    tolerance = 0.01   
+    prev_error, integral = 0.0, 0.0
+    prev_time = time.time()
+
     # สมัครสมาชิกเพื่อรับข้อมูลจากเซ็นเซอร์ต่าง ๆ
     ep_chassis.sub_position(freq=10, callback=sub_position_handler)
     ep_chassis.sub_attitude(freq=10, callback=sub_attitude_info_handler)
@@ -236,7 +242,13 @@ if __name__ == '__main__':
 
     while True:
  
-
+        current_time = time.time()
+        error = (tof_data[-1] - 300) / 10
+        time_diff = current_time - prev_time
+        integral += error * time_diff
+        derivative = (error - prev_error) / time_diff if time_diff > 0 else 0.0
+        speed = kp * error + kd * derivative + ki * integral 
+        speed = max(min(speed, 70), 0)  
         # เคลื่อนที่ไปข้างหน้าจนกว่า TOF จะน้อยกว่า 300 หรือเจอทางทางขวาที่ไปได้
         move_forword(ep_chassis, 300, overall_start_time, time_data, list_current_x)  
         ep_chassis.drive_wheels(w1=0, w2=0, w3=0, w4=0)  
@@ -268,7 +280,10 @@ if __name__ == '__main__':
             else:
                 # หยุดนิ่ง
                 ep_chassis.drive_wheels(w1=0, w2=0, w3=0, w4=0)  
-                break  
+                break 
+            
+        prev_error = error
+        prev_time = current_time  
         time.sleep(0.1)
 
         # หมุนหุ่นยนต์ไปทางขวา หากทางขวาไปได้
