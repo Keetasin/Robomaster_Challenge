@@ -1,6 +1,7 @@
 import time
 # import matplotlib.pyplot as plt
 from robomaster import robot
+import math
 
 # กำหนดlist เพื่อเก็บข้อมูล เเละกำหนดตัวเเปรค่าเริ่มต้น
 position_data = []
@@ -16,6 +17,7 @@ ir_right = 0
 count = 0
 yaw = None
 status = True
+PI = math.pi
 
 # Function Callback สำหรับจัดการข้อมูลตำแหน่งจากเซ็นเซอร์
 def sub_position_handler(position_info):
@@ -150,8 +152,8 @@ def move_forword(ep_chassis, threshold_distance, overall_start_time, time_data, 
 
         # เคลื่อนที่ไปด้านหน้า
         else:
-            ep_chassis.drive_wheels(w1=speed, w2=speed, w3=speed, w4=speed)
-            print('speed =', speed) 
+            ep_chassis.drive_wheels(w1=speed_rpm, w2=speed_rpm, w3=speed_rpm, w4=speed_rpm)
+            print('speed =', speed_rpm) 
 
         # ปรับค่า count และ status
         if count == 25:
@@ -217,7 +219,7 @@ if __name__ == '__main__':
     ep_sensor_adaptor = ep_robot.sensor_adaptor
     ep_gimbal = ep_robot.gimbal
 
-    kp, ki, kd = 0.5, 0.002, 0.15   
+    kp, ki, kd = 0.5, 0.01, 0.15   
     tolerance = 0.01   
     prev_error, integral = 0.0, 0.0
     prev_time = time.time()
@@ -241,14 +243,17 @@ if __name__ == '__main__':
     # fig, ax = plt.subplots()
 
     while True:
- 
+        
+        wheel_diameter = 10  # 10 cm
+        wheel_circumference = PI * wheel_diameter
         current_time = time.time()
         error = (tof_data[-1] - 300) / 10
         time_diff = current_time - prev_time
         integral += error * time_diff
         derivative = (error - prev_error) / time_diff if time_diff > 0 else 0.0
-        speed = kp * error + kd * derivative + ki * integral 
-        speed = max(min(speed, 70), 0)  
+        speed = kp * error + kd * derivative + ki * integral
+        speed_rpm = (speed / wheel_circumference) * 60 
+        speed_rpm = max(min(speed, 70), 0)  
         # เคลื่อนที่ไปข้างหน้าจนกว่า TOF จะน้อยกว่า 300 หรือเจอทางทางขวาที่ไปได้
         move_forword(ep_chassis, 300, overall_start_time, time_data, list_current_x)  
         ep_chassis.drive_wheels(w1=0, w2=0, w3=0, w4=0)  
