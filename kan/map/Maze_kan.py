@@ -215,12 +215,14 @@ if __name__ == '__main__':
         else:
             move_forward(ep_chassis)
             
-
+        # หยุดการทำงานหาก TOF มากกว่า 6000 และ current_left, current_right มากกว่า 49
+        if tof_data and tof_data[-1] >= 6000 and current_left >= 49 and current_left >= 49: 
+            break
         
 
-        # ยกเลิกการสมัครสมาชิกเซ็นเซอร์และปิดการเชื่อมต่อหุ่นยนต์
-        ep_chassis.unsub_position()
-        ep_chassis.unsub_attitude()
-        ep_sensor.unsub_distance()
-        ep_sensor_adaptor.unsub_adapter()
-        ep_robot.close()
+    # ยกเลิกการสมัครสมาชิกเซ็นเซอร์และปิดการเชื่อมต่อหุ่นยนต์
+    ep_chassis.unsub_position()
+    ep_chassis.unsub_attitude()
+    ep_sensor.unsub_distance()
+    ep_sensor_adaptor.unsub_adapter()
+    ep_robot.close()
