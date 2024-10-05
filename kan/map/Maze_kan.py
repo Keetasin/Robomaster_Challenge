@@ -29,7 +29,6 @@ def sub_attitude_info_handler(attitude_info):
 
 # Function Callback สำหรับจัดการข้อมูลจากเซ็นเซอร์ TOF
 def sub_tof_handler(tof_info):
-    time.sleep(0.1)
     tof_data.append(tof_info[0])
     # print('----------------------------------')
     # print(f'TOF: {tof_info[0]}')
@@ -105,24 +104,11 @@ def sub_data_handler(sub_info):
     # print('----------------------------------')
     return distances
 
-# Function เคลื่อนที่ไปข้างหน้าจนกว่าจะเจอกำเเพงด้านหน้า หรือเจอทางทางขวาที่ไปได้
-def explore_maze(ep_chassis, threshold_distance):
-    global current_left, current_right
-
-    while True:
-        # หยุดหุ่นยนต์หาก TOF น้อยกว่าค่า threshold (เจอกำเเพงด้านหน้า)
-        if tof_data[-1] < threshold_distance :
-            stop_move(ep_chassis)
-            print(">>>", tof_data[-1])
-            break
-
 def move_forward(ep_chassis):
     ep_chassis.drive_wheels(w1=50, w2=50, w3=50, w4=50)
-    time.sleep(0.1)
 
 def stop_move(ep_chassis):
     ep_chassis.drive_wheels(w1=0, w2=0, w3=0, w4=0)  
-    time.sleep(0.05)
 
 # Functionหมุนหุ่นยนต์ 180 องศา
 def rotate_180_degrees(ep_chassis):  
@@ -160,6 +146,20 @@ def adjust_angle(yaw):
         target_yaw = 180
         ep_chassis.move(x=0, y=0, z=correction-target_yaw, z_speed=20).wait_for_completed() 
 
+def scan_gimbal(ep_gimbal):
+    angles_to_scan = [-90, 0, 90]  # Scan left, center, right
+    for angle in angles_to_scan:
+        ep_gimbal.moveto(pitch=0, yaw=angle, yaw_speed=200).wait_for_completed()
+        time.sleep(1)  # Allow time for sensor reading
+        if len(tof_data) > 0 and tof_data[-1] > 300:  # Clear path found
+            return angle
+    return None  # No clear path found
+
+def check_obstacle():
+    if tof_data and len(tof_data) > 0 and tof_data[-1] <= 330:
+        return True
+    return False
+
 
 if __name__ == '__main__':
     # เริ่มต้นการเชื่อมต่อกับหุ่นยนต์
@@ -182,7 +182,7 @@ if __name__ == '__main__':
     ir_left = 0
     ir_right = 0
     
-    threshold_distance = 320
+    threshold_distance = 330
 
     ep_chassis.sub_position(freq=10, callback=sub_position_handler)
     ep_chassis.sub_attitude(freq=10, callback=sub_attitude_info_handler)
@@ -194,16 +194,33 @@ if __name__ == '__main__':
     ep_gimbal.recenter().wait_for_completed()
     time.sleep(0.1)
 
+    # explor_maze
     while True:
         current_time = time.time()
-        
-        move_forward(ep_chassis)
-        explore_maze(ep_chassis, threshold_distance)
-        break
+        if check_obstacle():
+            stop_move(ep_chassis)
+            
+            clear_path_angle = scan_gimbal(ep_gimbal)
+            if clear_path_angle is not None:
+                print(f"Clear path found at {clear_path_angle} degrees!")
+                if clear_path_angle == 90:
+                        rotate_right(ep_chassis)
+                elif clear_path_angle == -90:
+                        rotate_left(ep_chassis)
+                    
+                move_forward(ep_chassis)
+            else:
+                    print("No clear path found, turning around!")
+                    rotate_180_degrees(ep_chassis)
+        else:
+            move_forward(ep_chassis)
+            
 
-    # ยกเลิกการสมัครสมาชิกเซ็นเซอร์และปิดการเชื่อมต่อหุ่นยนต์
-    ep_chassis.unsub_position()
-    ep_chassis.unsub_attitude()
-    ep_sensor.unsub_distance()
-    ep_sensor_adaptor.unsub_adapter()
-    ep_robot.close()
+        
+
+        # ยกเลิกการสมัครสมาชิกเซ็นเซอร์และปิดการเชื่อมต่อหุ่นยนต์
+        ep_chassis.unsub_position()
+        ep_chassis.unsub_attitude()
+        ep_sensor.unsub_distance()
+        ep_sensor_adaptor.unsub_adapter()
+        ep_robot.close()
