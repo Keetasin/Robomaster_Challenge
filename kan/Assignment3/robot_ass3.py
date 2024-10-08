@@ -117,6 +117,10 @@ def sub_attitude_info_handler(attitude_info):
 
 ''' ----- adjust_all_walls ----- '''
 def adjust_all_walls():
+    if adc_r_new <= 10:
+        ep_chassis.drive_wheels(w1=18, w2=-18, w3=18, w4=-18)
+    elif adc_l_new <= 10:
+        ep_chassis.drive_wheels(w1=-18, w2=18, w3=-18, w4=18)
     adjust_front_wall()
     adjust_left_wall()
     adjust_right_wall()

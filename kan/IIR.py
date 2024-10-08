@@ -49,7 +49,7 @@ def sub_data_handler(sub_info):
     sharp_right_data.append(sharp_right)
     
     # Error left 
-    if sharp_left >= 13:
+    if sharp_left >= 16:
         sharp_left += 2
     
     # ตัดช่วง

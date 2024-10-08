@@ -49,42 +49,19 @@ def detect_chicken(contours_chicken):
     new_x_chicken = x_chicken - add_w_chicken // 2
     new_w_chicken = w_chicken + add_w_chicken
     new_h_chicken = h_chicken + add_h_chicken
+
+    height, width = frame.shape[:2]
+    center_x, center_y = width // 2, height // 2
+    
+    # Draw horizontal and vertical lines (crosshair)
+    cv2.line(frame, (center_x - 20, center_y), (center_x + 20, center_y), (0, 255, 0), 2)  # Horizontal line
+    cv2.line(frame, (center_x, center_y - 20), (center_x, center_y + 20), (0, 255, 0), 2)  # Vertical line
     cv2.rectangle(frame, (new_x_chicken, new_y_chicken), (new_x_chicken + new_w_chicken, new_y_chicken + new_h_chicken), (255, 0, 255), 2)
     cv2.putText(frame, f" chicken x: {x_chicken}, y: {y_chicken}, w: {w_chicken}, h: {h_chicken}", (x_chicken, y_chicken - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1)
 
     return Marker(new_x_chicken, new_y_chicken, new_w_chicken, new_h_chicken)
 
 
-def detect_bottle():
-    max_bottle_contour = max(contours_bottle, key=cv2.contourArea)
-    (x_bottle, y_bottle, w_bottle, h_bottle) = cv2.boundingRect(max_bottle_contour)
-
-    if w_bottle > 85:   
-        add_w_bottle = int(w_bottle * 0.27)  
-        add_h_bottle = int(h_bottle * 2.7)
-        new_y_bottle = y_bottle - add_h_bottle // 2 -13
-
-    elif w_bottle > 50:  
-        add_w_bottle = int(w_bottle * 0.27)  
-        add_h_bottle = int(h_bottle * 2.9)
-        new_y_bottle = y_bottle - add_h_bottle // 2 -11    
-
-    elif w_bottle > 35:  
-        add_w_bottle = int(w_bottle * 0.28)  
-        add_h_bottle = int(h_bottle * 3.3)
-        new_y_bottle = y_bottle - add_h_bottle // 2 -4
-
-    else:
-        add_w_bottle = int(w_bottle * 0.47)
-        add_h_bottle = int(h_bottle * 3.4)
-        new_y_bottle = y_bottle - add_h_bottle // 2 -4
-
-    new_x_bottle = x_bottle - add_w_bottle // 2
-    new_w_bottle = w_bottle + add_w_bottle
-    new_h_bottle = h_bottle + add_h_bottle
-
-    cv2.rectangle(frame, (new_x_bottle, new_y_bottle), (new_x_bottle + new_w_bottle, new_y_bottle + new_h_bottle), (0, 165, 255), 2)
-    cv2.putText(frame, f" BOTTLE x: {x_bottle}, y: {y_bottle}, w: {w_bottle}, h: {h_bottle}", (x_bottle, y_bottle-50), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1)
 
 if __name__ == "__main__":
     ep_robot = robot.Robot()
@@ -98,7 +75,7 @@ if __name__ == "__main__":
     center_y = 720 / 2
 
     current_x = 0.0  
-    target_distance = 1.3
+    target_distance = 4.2
     kp, ki, kd = 75, 10, 30   
     tolerance = 0.01   
     prev_error, integral = 0.0, 0.0
@@ -114,7 +91,7 @@ if __name__ == "__main__":
     prev_time = time.time()
 
     xx = True
-    count = 0
+    count1 = 0
     
 
     ep_chassis.sub_position(freq=10, callback=sub_position_handler)
@@ -141,11 +118,10 @@ if __name__ == "__main__":
         contours_bottle, _ = cv2.findContours(mask_bottle, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
         if contours_chicken: marker = detect_chicken(contours_chicken)
-        if contours_bottle: detect_bottle()
-        if marker._w >65 and count == 0: xx = False
-        if count > 0 :count += 1
-        if count == 50:  count = 0
-        print(count)
+        if marker._w >65 and count1 == 0: xx = False
+        if count1 > 0 :count1 += 1
+        if count1 == 60:  count1 = 0
+        print(count1)
         
         if target_distance - current_x > tolerance and xx:
             current_time = time.time()
@@ -162,7 +138,6 @@ if __name__ == "__main__":
 
         else:
             ep_chassis.drive_wheels(w1=0, w2=0, w3=0, w4=0)
-            time.sleep(0.05)
             if marker:
                 after_time = time.time()
                 x, y = marker.center
@@ -185,11 +160,13 @@ if __name__ == "__main__":
 
                 
                 if  marker._w >=65:
+                    count1 += 1
                     cv2.rectangle(frame, marker.pt1, marker.pt2, (0, 0, 0), 2)
-                    ep_blaster.fire(fire_type=blaster.INFRARED_FIRE, times=1)
-                    xx = True
-                    count += 1
-                    print('---------')
+                    if count1 >= 20:
+                        ep_blaster.fire(fire_type=blaster.INFRARED_FIRE, times=1)
+                        ep_gimbal.recenter(pitch_speed=200, yaw_speed=200).wait_for_completed()
+                        xx = True
+                        print('---------')
                     
 
             else:
@@ -205,3 +182,13 @@ if __name__ == "__main__":
     ep_camera.stop_video_stream()
     ep_chassis.unsub_position()
     ep_robot.close()
+
+
+
+
+
+
+
+
+
+

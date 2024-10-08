@@ -142,10 +142,10 @@ def move_forword(ep_chassis, threshold_distance, overall_start_time, time_data, 
             break
 
         # current_right หรือ current_left ต่ำกว่า 10 ให้ขยับรถเข้ากลาง เพื่อไม่ให้ชนกำเเพง
-        elif current_right <= 10 :#or (ir_right == 0 and ir_left == 1) :
+        elif current_right <= 10 or (ir_right == 0 and ir_left == 1) :
             ep_chassis.drive_wheels(w1=18, w2=-18, w3=18, w4=-18)  
             print('<')
-        elif current_left <= 10 :#or (ir_left == 0 and ir_right == 1):
+        elif current_left <= 10 or (ir_left == 0 and ir_right == 1):
             ep_chassis.drive_wheels(w1=-18, w2=18, w3=-18, w4=18)  
             print('>')
 
@@ -156,7 +156,7 @@ def move_forword(ep_chassis, threshold_distance, overall_start_time, time_data, 
             print('speed =', speed_rpm) 
 
         # ปรับค่า count และ status
-        if count == 25:
+        if count == 15:
             status = True
             count = 0
 
@@ -228,7 +228,7 @@ if __name__ == '__main__':
     ep_chassis.sub_position(freq=10, callback=sub_position_handler)
     ep_chassis.sub_attitude(freq=10, callback=sub_attitude_info_handler)
     ep_sensor.sub_distance(freq=10, callback=sub_tof_handler)
-    ep_sensor_adaptor.sub_adapter(freq=10, callback=sub_data_handler)  
+    ep_sensor_adaptor.sub_adapter(freq=50, callback=sub_data_handler)  
     time.sleep(0.5)
 
     time_data, list_current_x = [], []
@@ -273,12 +273,12 @@ if __name__ == '__main__':
             # เคลื่อนที่ไปทางซ้าย หาก current_right น้อยกว่า 10
 
             # เคลื่อนที่ไปทางขวา หาก current_left น้อยกว่า 10
-            elif current_left <= 10 :#or (ir_left == 0 and ir_right == 1):
+            elif current_left <= 10 or (ir_left == 0 and ir_right == 1):
                 ep_chassis.drive_wheels(w1=-18, w2=18, w3=-18, w4=18)                   
                 # print(current_left,ir_left)
                 print('>>')
 
-            elif current_right <= 10 :#or (ir_right == 0 and ir_left == 1):
+            elif current_right <= 10 or (ir_right == 0 and ir_left == 1):
                 ep_chassis.drive_wheels(w1=18, w2=-18, w3=18, w4=-18) 
                 # print(current_right,ir_right)
                 print('<<')

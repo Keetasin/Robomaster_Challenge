@@ -35,7 +35,7 @@ class CokeCanMarker:
     def text(self):
         return f"Score: {self._score:.2f}"
 
-def detect_coke_can(image):
+def coke(image):
     hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
     lower_red1 = np.array([0, 70, 50])
     upper_red1 = np.array([10, 255, 255])
@@ -50,7 +50,8 @@ def detect_coke_can(image):
     best_score = -1
     best_box = None
     stride = 20
-    
+
+
     for (box_w, box_h) in anchor_boxes:
         for y in range(0, mask.shape[0] - box_h, stride):
             for x in range(0, mask.shape[1] - box_w, stride):
@@ -73,11 +74,11 @@ def detect_coke_can(image):
 
     if best_box:
         x, y, box_w, box_h = best_box
+
         cv2.rectangle(image, (x, y), (x + box_w, y + box_h), (0, 255, 0), 2)
         return CokeCanMarker(x, y, box_w, box_h, best_score), best_score
 
     return None, None
-
 
 if __name__ == "__main__":
     ep_robot = robot.Robot()
@@ -106,8 +107,9 @@ if __name__ == "__main__":
     prev_err_y = 0
     
     while True:
-        img = ep_camera.read_cv2_image(strategy="newest", timeout=0.5)
-        marker,score = detect_coke_can(img)
+        img = ep_camera.read_cv2_image(strategy="newest", timeout=0.5)[0:650,:]
+
+        marker,score = coke(img)
 
         if marker:
             after_time = time.time()
@@ -135,6 +137,13 @@ if __name__ == "__main__":
             prev_err_x = err_x
             prev_err_y = err_y
 
+                # Draw crosshair at the center of the image
+            height, width = img.shape[:2]
+            center_x, center_y = width // 2, height // 2
+            
+            # Draw horizontal and vertical lines (crosshair)
+            cv2.line(img, (center_x - 20, center_y), (center_x + 20, center_y), (0, 255, 0), 2)  # Horizontal line
+            cv2.line(img, (center_x, center_y - 20), (center_x, center_y + 20), (0, 255, 0), 2)  # Vertical line
             cv2.rectangle(img, marker.pt1, marker.pt2, (0, 255, 0), 2)
             cv2.putText(img, marker.text, marker.center, cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
             time.sleep(0.001)

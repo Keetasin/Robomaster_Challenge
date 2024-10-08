@@ -10,6 +10,9 @@ right_time_data = []
 
 def sub_data_handler(sub_info):
     io_data, ad_data = sub_info
+
+    # IO data
+    # print("io value: {0}".format(io_data))
     
     distances = []
     for adc_value in ad_data:
@@ -39,10 +42,17 @@ def sub_data_handler(sub_info):
     left_time_data.append(time.time())
     right_time_data.append(time.time())
     
-    if 9 <= left <= 13:
-        left += 1
-    elif 14 <= left <= 16:  
-        left += 3
+    
+    # 9 10 11 12 error 1 cm.
+    # 13 14 15 16 17 18 error 3 cm.
+    # 19 20 21 error 4 cm. 
+
+
+    
+    # if 9 <= left <= 13:
+    #     left += 1
+    # elif 14 <= left <= 16:  
+    #     left += 3
 
     if left >= 25:
         left = 50
@@ -52,8 +62,11 @@ def sub_data_handler(sub_info):
         print("!" * 15)
         
     # print("--> ad_data", ad_data[0:4])
+    
+    # AD data
     print(f"port1 left: {left}, port2 right: {right}")
-
+    
+    
     return distances
 
 def sub_tof_handler(sub_info):
@@ -71,10 +84,11 @@ if __name__ == '__main__':
     ep_sensor = ep_robot.sensor
     ep_sensor_adaptor = ep_robot.sensor_adaptor
 
-    ep_sensor.sub_distance(freq=5, callback=sub_tof_handler)
-    ep_sensor_adaptor.sub_adapter(freq=5, callback=sub_data_handler)
+    # ep_sensor.sub_distance(freq=5, callback=sub_tof_handler)
+    
+    ep_sensor_adaptor.sub_adapter(freq=25, callback=sub_data_handler)
     time.sleep(20)
     ep_sensor.unsub_adapter()
-    ep_sensor.unsub_distance()
+    # ep_sensor.unsub_distance()
 
     ep_robot.close()
